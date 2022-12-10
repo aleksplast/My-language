@@ -29,6 +29,7 @@ int TreeCtor(Tree* tree, NodeType type, double val, OperType optype, char* varva
     tree->anchor->rightchild = NULL;
     tree->anchor->leftchild = NULL;
     tree->anchor->tree = tree;
+    tree->anchor->line = 0;
 
     tree->size = 1;
 
@@ -159,6 +160,7 @@ Node* AddRightChild(Tree* tree, Node* ancestor)
     ancestor->rightchild->val = 0;
     ancestor->rightchild->optype = OP_UNKNOWN;
     ancestor->rightchild->varvalue = NULL;
+    ancestor->rightchild->line = 0;
 
     ancestor->rightchild->leftchild = NULL;
     ancestor->rightchild->rightchild = NULL;
@@ -186,6 +188,7 @@ Node* AddLeftChild(Tree* tree, Node* ancestor)
     ancestor->leftchild->val = 0;
     ancestor->leftchild->optype = OP_UNKNOWN;
     ancestor->leftchild->varvalue = NULL;
+    ancestor->leftchild->line = 0;
 
     ancestor->leftchild->leftchild = NULL;
     ancestor->leftchild->rightchild = NULL;
@@ -357,6 +360,10 @@ OperType IsOper(char* str)
         return OP_EQ;
     else if (strcmp(str, "iiiii") == 0)
         return OP_COMMA;
+    else if (strcmp(str, "topdek") == 0)
+        return OP_IN;
+    else if (strcmp(str, "zhmurik") == 0)
+        return OP_OUT;
 
     return OP_UNKNOWN;
 }

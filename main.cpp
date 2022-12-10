@@ -2,9 +2,9 @@
 
 #include "mylang.h"
 
-int main()
+int main(int argc, char* argv[])
 {
-    char input[40] = "input.txt";
+    const char* input = GetComArg(argc, argv);
 
     LanguageMain(input);
 

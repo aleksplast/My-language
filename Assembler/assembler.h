@@ -30,9 +30,18 @@ bool CheckForComment(char* line);
 
 int PushLabel(struct asemblr* asemblr, char* cmd);
 
+int GetLabelStr(asemblr* asemblr, char* label);
+
+struct labelsstr
+{
+    char* name;
+    int byte;
+};
+
 struct labels
 {
     int* labelsarray;
+    labelsstr* labelstrarray;
     int labelsnum;
 };
 

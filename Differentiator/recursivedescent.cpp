@@ -6,7 +6,19 @@
 
 const int Cmdsize = 40;
 
-Node* CreateNode(NodeType type, double val, OperType optype, char* varvalue, Tree* tree, Node* ancestor, Node* leftchild, Node* rightchild)
+#define CreateOpType(OpType) CreateNode(OP_TYPE, 0, OpType, NULL, NULL, NULL, NULL, NULL, 0)
+
+const char* GetComArg(int argc, char* argv[])
+{
+    const char* input = "input.txt";
+
+    if (argc > 1)
+        return argv[1];
+    else
+        return input;
+}
+
+Node* CreateNode(NodeType type, double val, OperType optype, char* varvalue, Tree* tree, Node* ancestor, Node* leftchild, Node* rightchild, int line)
 {
     Node* newnode = (Node*) calloc(1, sizeof(Node));
 
@@ -16,6 +28,7 @@ Node* CreateNode(NodeType type, double val, OperType optype, char* varvalue, Tre
     newnode->varvalue = varvalue;
     newnode->tree = tree;
     newnode->ancestor = ancestor;
+    newnode->line = line;
 
     newnode->leftchild = leftchild;
     newnode->rightchild = rightchild;
@@ -23,7 +36,7 @@ Node* CreateNode(NodeType type, double val, OperType optype, char* varvalue, Tre
     return newnode;
 }
 
-Node** LexicAnalizer(char* str)
+Node** LexicAnalizer(char* str, char*** namestable)
 {
     char** s = &str;
 
@@ -31,92 +44,182 @@ Node** LexicAnalizer(char* str)
 
     Node** oldnodes = nodes;
 
-    StringAnalizer(s, &nodes);
+    StringAnalizer(s, &nodes, namestable);
 
     return oldnodes;
 }
 
-int StringAnalizer(char** s, Node*** nodes)
+int StringAnalizer(char** s, Node*** nodes, char*** namestable)
 {
     double val = 0;
     int len = 0;
-
-    while(isspace(**s))
-        (*s)++;
+    char* name = NULL;
+    char** oldtable = *namestable;
+    int line = 1;
 
     while (**s != '\0')
     {
         char* cmd = (char*) calloc(Cmdsize, sizeof(char));
         while(isspace(**s))
+        {
+            if (**s == '\n')
+                line++;
             (*s)++;
+        }
         if (sscanf(*s, "%lg%n", &val, &len) == 1)
         {
-            **nodes = CreateNode(NUM_TYPE, val, OP_UNKNOWN, NULL, NULL, NULL, NULL, NULL);
+            **nodes = CreateNode(NUM_TYPE, val, OP_UNKNOWN, NULL, NULL, NULL, NULL, NULL, line);
             (*s) += len;
             (*nodes)++;
+            free(cmd);
         }
         else if (sscanf(*s, "%s%n", cmd, &len) == 1)
         {
             if (OperType optype = IsOper(cmd))
-                **nodes = CreateNode(OP_TYPE, 0, optype, NULL, NULL, NULL, NULL, NULL);
+            {
+                **nodes = CreateNode(OP_TYPE, 0, optype, NULL, NULL, NULL, NULL, NULL, line);
+                free(cmd);
+            }
             else
-                **nodes = CreateNode(VAR_TYPE, 0, OP_UNKNOWN, cmd, NULL, NULL, NULL, NULL);
+            {
+                if ((name = CheckForNewName(cmd, namestable)) == NULL)
+                    **nodes = CreateNode(VAR_TYPE, 0, OP_UNKNOWN, cmd, NULL, NULL, NULL, NULL, line);
+                else
+                {
+                    **nodes = CreateNode(VAR_TYPE, 0, OP_UNKNOWN, name, NULL, NULL, NULL, NULL, line);
+                    free(cmd);
+                }
+            }
             *s += len;
             (*nodes)++;
         }
+
+        *namestable = oldtable;
     }
 
-    **nodes = CreateNode(OP_TYPE, 0, OP_END, NULL, NULL, NULL, NULL, NULL);
+    **nodes = CreateNode(OP_TYPE, 0, OP_END, NULL, NULL, NULL, NULL, NULL, line);
     (*s)++;
     (*nodes)++;
 
     return NOERR;
 }
 
+char* CheckForNewName(char* cmd, char*** namestable)
+{
+    while (**namestable != NULL)
+    {
+        if (strcmp(cmd, **namestable) == 0)
+            return **namestable;
+
+        (*namestable)++;
+    }
+
+    **namestable = cmd;
+
+    return NULL;
+}
+
+int DataPrint(Node* node)
+{
+    FILE* data = fopen("data.txt", "w");
+
+    NodePrint(data, node);
+
+    fclose(data);
+
+    return NOERR;
+}
+
+int NodePrint(FILE* data, Node* node)
+{
+    fprintf(data, " { ");
+    ContentPrint(data, node);
+
+    if (node->leftchild)
+        NodePrint(data, node->leftchild);
+
+    if (node->rightchild)
+        NodePrint(data, node->rightchild);
+
+    fprintf(data, " } ");
+
+    return NOERR;
+}
+
+int ContentPrint(FILE* data, Node* node)
+{
+    if (node->type == NUM_TYPE)
+        fprintf(data, "%lg", node->val);
+
+    else if (node->type == VAR_TYPE)
+        fprintf(data, "%s", node->varvalue);
+
+    else if (node->type == OP_TYPE)
+        OpTypePrint(data, node->optype);
+
+    return NOERR;
+}
+
 Node* GetGrammar(Node** nodes)
 {
-    Node* node = GetFunc(&nodes);
+    Node* node = GetCode(&nodes);
     assert((*nodes)->optype == OP_END);
 
     return node;
+}
+
+Node* GetCode(Node*** arr)
+{
+    assert((**arr)->optype == OP_FUNC || (**arr)->optype == OP_VAR);
+
+    Node* returnnode = CreateOpType(OP_STAT);
+    Node* currnode = returnnode;
+    Node* node = NULL;
+
+    if ((**arr)->optype == OP_FUNC)
+        node = GetFunc(arr);
+    else
+        node = GetAssign(arr);
+
+    currnode->leftchild = node;
+
+    while ((**arr)->optype == OP_FUNC || (**arr)->optype == OP_VAR)
+    {
+        Node* newnode = CreateOpType(OP_STAT);
+        currnode->rightchild = newnode;
+        currnode = newnode;
+        node = NULL;
+
+        if ((**arr)->optype == OP_FUNC)
+            node = GetFunc(arr);
+        else
+            node = GetAssign(arr);
+
+        currnode->leftchild = node;
+    }
+
+    return returnnode;
 }
 
 Node* GetFunc(Node*** arr)
 {
     assert((**arr)->optype == OP_FUNC);
 
-    Node* funcnode = CreateNode(OP_TYPE, 0, OP_STAT, NULL, NULL, NULL, NULL, NULL);
-    Node* returnnode = funcnode;
-
     Node* currnode = **arr;
-    funcnode->leftchild = currnode;
     (*arr)++;
+
     Node* nodeL = **arr;
     (*arr)++;
+
     currnode->leftchild = nodeL;
+
     Node* nodeLL = GetParams(arr);
     Node* nodeR = GetStatement(arr);
+
     currnode->rightchild = nodeR;
     nodeL->leftchild = nodeLL;
 
-    while((**arr)->optype == OP_FUNC)
-    {
-        Node* newnode = CreateNode(OP_TYPE, 0, OP_STAT, NULL, NULL, NULL, NULL, NULL);
-        currnode = **arr;
-        newnode->leftchild = currnode;
-        (*arr)++;
-        nodeL = **arr;
-        (*arr)++;
-        currnode->leftchild = nodeL;
-        nodeLL = GetParams(arr);
-        nodeL->leftchild = nodeLL;
-        Node* nodeR = GetStatement(arr);
-        currnode->rightchild = nodeR;
-        funcnode->rightchild = newnode;
-        funcnode = newnode;
-    }
-
-    return returnnode;
+    return currnode;
 }
 
 Node* GetParams(Node*** arr)
@@ -125,10 +228,13 @@ Node* GetParams(Node*** arr)
     (*arr)++;
 
     Node* paramnode = NULL;
-    if ((**arr)->optype != OP_VAR)
+    if ((**arr)->optype == OP_CLBRC)
+    {
+        (*arr)++;
         return paramnode;
+    }
 
-    paramnode = CreateNode(OP_TYPE, 0, OP_PARAM, NULL, NULL, NULL, NULL, NULL);
+    paramnode = CreateOpType(OP_PARAM);
     Node* currnode = **arr;
     paramnode->leftchild = currnode;
     (*arr)++;
@@ -144,7 +250,7 @@ Node* GetParams(Node*** arr)
 
     while((**arr)->optype == OP_VAR)
     {
-        Node* newnode = CreateNode(OP_TYPE, 0, OP_PARAM, NULL, NULL, NULL, NULL, NULL);
+        Node* newnode = CreateOpType(OP_PARAM);
         currnode = **arr;
         newnode->leftchild = currnode;
         (*arr)++;
@@ -173,9 +279,9 @@ Node* GetStatement(Node*** arr)
     Node* oldstat = NULL;
 
 
-    while ((**arr)->optype == OP_WHILE || (**arr)->optype == OP_IF || (**arr)->optype == OP_RET || (**arr)->type != OP_TYPE || (**arr)->optype == OP_VAR)
+    while ((**arr)->optype == OP_WHILE || (**arr)->optype == OP_IF || (**arr)->optype == OP_RET || (**arr)->type != OP_TYPE || (**arr)->optype == OP_VAR || (**arr)->optype == OP_IN || (**arr)->optype == OP_OUT)
     {
-        statnode = CreateNode(OP_TYPE, 0, OP_STAT, NULL, NULL, NULL, NULL, NULL);
+        statnode = CreateOpType(OP_STAT);
         if (returnnode == NULL)
             returnnode = statnode;
 
@@ -184,19 +290,21 @@ Node* GetStatement(Node*** arr)
         if ((**arr)->optype == OP_WHILE)
             nodeL = GetWhile(arr);
         else if ((**arr)->optype == OP_IF)
-        {
             nodeL = GetIf(arr);
-        }
         else if ((**arr)->optype == OP_RET)
             nodeL = GetRet(arr);
         else if ((**arr)->optype == OP_VAR)
             nodeL = GetAssign(arr);
+        else if ((**arr)->optype == OP_IN)
+            nodeL = GetIn(arr);
+        else if ((**arr)->optype == OP_OUT)
+            nodeL = GetOut(arr);
         else
         {
             nodeL = GetExpression(arr);
             if ((**arr)->optype == OP_OPBRC)
             {
-                Node* callnode = CreateNode(OP_TYPE, 0, OP_CALL, NULL, NULL, NULL, NULL, NULL);
+                Node* callnode = CreateOpType(OP_CALL);
                 callnode->leftchild = nodeL;
                 nodeL = callnode;
 
@@ -215,7 +323,7 @@ Node* GetStatement(Node*** arr)
 
                 if ((**arr)->optype == OP_OPBRC)
                 {
-                    Node* callnode = CreateNode(OP_TYPE, 0, OP_CALL, NULL, NULL, NULL, NULL, NULL);
+                    Node* callnode = CreateOpType(OP_CALL);
 
                     nodeL->leftchild = nodeLL;
                     nodeL->rightchild = callnode;
@@ -247,6 +355,52 @@ Node* GetStatement(Node*** arr)
     return returnnode;
 }
 
+Node* GetIn(Node*** arr)
+{
+    assert((**arr)->optype == OP_IN);
+
+    Node* returnnode = **arr;
+    (*arr)++;
+
+    assert((**arr)->optype == OP_OPBRC);
+    (*arr)++;
+
+    Node* nodeL = (**arr);
+    returnnode->leftchild = nodeL;
+    (*arr)++;
+
+    assert((**arr)->optype == OP_CLBRC);
+    (*arr)++;
+
+    assert((**arr)->optype == OP_SEP);
+    (*arr)++;
+
+    return returnnode;
+}
+
+Node* GetOut(Node*** arr)
+{
+    assert((**arr)->optype == OP_OUT);
+
+    Node* returnnode = **arr;
+    (*arr)++;
+
+    assert((**arr)->optype == OP_OPBRC);
+    (*arr)++;
+
+    Node* nodeL = (**arr);
+    returnnode->leftchild = nodeL;
+    (*arr)++;
+
+    assert((**arr)->optype == OP_CLBRC);
+    (*arr)++;
+
+    assert((**arr)->optype == OP_SEP);
+    (*arr)++;
+
+    return returnnode;
+}
+
 Node* GetCall(Node*** arr)
 {
     assert((**arr)->optype == OP_OPBRC);
@@ -256,7 +410,7 @@ Node* GetCall(Node*** arr)
     if ((**arr)->type != VAR_TYPE && (**arr)->type != NUM_TYPE)
         return paramnode;
 
-    paramnode = CreateNode(OP_TYPE, 0, OP_PARAM, NULL, NULL, NULL, NULL, NULL);
+    paramnode = CreateOpType(OP_PARAM);
     Node* currnode = GetExpression(arr);
 
     paramnode->leftchild = currnode;
@@ -267,7 +421,7 @@ Node* GetCall(Node*** arr)
     Node* returnnode = paramnode;
     while((**arr)->type == VAR_TYPE || (**arr)->type == NUM_TYPE)
     {
-        Node* newnode = CreateNode(OP_TYPE, 0, OP_PARAM, NULL, NULL, NULL, NULL, NULL);
+        Node* newnode = CreateOpType(OP_PARAM);
 
         currnode = GetExpression(arr);
         newnode->leftchild = currnode;
@@ -472,4 +626,35 @@ Node* GetNumber(Node*** arr)
     (*arr)++;
 
     return node;
+}
+
+int CheckForError(Node* node, OperType optype)
+{
+    if (node->optype != optype)
+    {
+        ErrorPrint(node);
+        exit(1);
+    }
+
+    return true;
+}
+
+int ErrorPrint(Node* node)
+{
+    if (node->optype == OP_SEP)
+        printf("Missing separation token on line %d\n", node->line);
+    else if (node->optype == OP_OPBRC)
+        printf("Missing opening bracket on line %d\n", node->line);
+    else if (node->optype == OP_CLBRC)
+        printf("Missing closing bracket on line %d\n", node->line);
+    else if (node->optype == OP_EQ)
+        printf("Missing equality token on line %d\n", node->line);
+    else if (node->optype == OP_VAR)
+        printf("Missing variable token on line %d\n", node->line);
+    else if (node->optype == OP_FUNC)
+        printf("Missing function token on line %d\n", node->line);
+    else if (node->optype == OP_COMMA)
+        printf("Missing comma on line %d\n", node->line);
+
+    return NOERR;
 }

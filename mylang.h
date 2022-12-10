@@ -1,22 +1,68 @@
 #ifndef MYLANG_H
 #define MYLANG_H
 
+#include "config.h"
 #include "Onegin-sort\text-sort.h"
 #include "Differentiator\common.h"
 #include "Differentiator\diftree.h"
 #include "Differentiator\recursivedescent.h"
+#include "stack.h"
 
 typedef poem Source;
 
-int LanguageMain(char* input);
+int LanguageMain(const char* input);
 
 char* TranslitIntoEnglish(char* str, long size);
 
-Source InputHandler(char* input);
+Source InputHandler(const char* input);
 
 int CreateAsmProgramm(Node* node, FILE* out);
 
-int NodeIntoAsmCode(Node* node, FILE* out);
+int NodeIntoAsmCode(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AsmCodeStatement(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AsmCodeIf(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AsmCodeElse(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AsmCodeWhile(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AsmCodeFunc(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AsmCodeNum(Node* node, FILE* out);
+
+int AsmCodeArithOper(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AsmCodeVar(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AsmCodeEq(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AsmCodeParam(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AsmCodeRet(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AsmCodeVariable(Node* node, stack* nametablestk, FILE* out);
+
+int AsmCodeCall(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AsmCodeIn(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AsmCodeOut(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
+
+int AddToNamesTable(stack* nametablestk, char* name);
+
+int PushFromNamesTable(FILE* out, stack* nametablestk, char* name);
+
+int PopFromNamesTable(FILE* out, stack* nametablestk, char* name);
+
+int FillNamesTable(Node* node, stack* namestablestk);
+
+NamesTable CreateNameTable();
+
+int ReduceRax(FILE* out, stack* nametablestk);
+
+int EnlargeRax(FILE* out, stack* nametablestk);
 
 enum RussianSymb
 {

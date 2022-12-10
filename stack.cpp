@@ -36,9 +36,6 @@ int StackCtor(struct stack* stk, size_t capacity)
 
     UpdateHash(stk);
 
-    if (int errors = StackErr(stk))
-        DBG StackDump(stk, errors, __LINE__, __func__, __FILE__);
-
     UpdateHash(stk);
 
     return NOERR;
@@ -60,9 +57,6 @@ elem_t StackPop(struct stack* stk)
 {
     DBG assert(stk != NULL);
 
-    if (int errors = StackErr(stk))
-        DBG StackDump(stk, errors, __LINE__, __func__, __FILE__);
-
     stk->size--;
     elem_t value = stk->data[stk->size];
     stk->data[stk->size] = GetPoison(stk->data[0]);
@@ -81,9 +75,6 @@ elem_t StackPop(struct stack* stk)
 int StackPush(struct stack* stk, elem_t elem)
 {
     DBG assert(stk != NULL);
-
-    if (int errors = StackErr(stk))
-        DBG StackDump(stk, errors, __LINE__, __func__, __FILE__);
 
     if (stk->size >= stk->capacity)
     {
@@ -159,54 +150,9 @@ int StackErr(struct stack* stk)
     return errors;
 }
 
-int StackDump(struct stack* stk, int errors, int line, const char* func, const char* file)
-{
-    FILE* logs = fopen("logs.txt", "a");
-
-    if (stk == NULL)
-    {
-        fprintf(logs, "STACK POINTER IS NULL");
-        return STKPTRERR;
-    }
-
-    fprintf(logs, "\n%s at ", func);
-    fprintf(logs, "%s", file);
-    fprintf(logs, "(%d)\n", line);
-    fprintf(logs, "Stack[%p] ", &stk);
-    if (errors == 0)
-        fprintf(logs, "(OK)\n");
-    else
-        fprintf(logs, "(ERROR CODE = %d)\n", errors);
-    fprintf(logs, "{\n\tsize = %lu\n", stk->size);
-    fprintf(logs, "\tcapacity = %lu\n", stk->capacity);
-    fprintf(logs, "\tdata[%p]\n\t{\n", stk->data);
-    if (stk->data != NULL)
-    {
-        for (int i = 0; i < stk->capacity; i++)
-        {
-            if (stk->data[i] != GetPoison(stk->data[0]))
-            {
-                fprintf(logs, "\t\t*[%d] = ", i);
-                print(logs, stk->data[i]);
-            }
-            else
-                fprintf(logs, "\t\t[%d] = POISON\n", i);
-        }
-    }
-    fprintf(logs, "\t}\n");
-    fprintf(logs, "}\n");
-
-    fclose(logs);
-
-    return NOERR;
-}
-
 int StackDetor(struct stack* stk)
 {
     DBG assert(stk != NULL);
-
-    if (int errors = StackErr(stk))
-        DBG StackDump(stk, errors, __LINE__, __func__, __FILE__);
 
     stk->canaryleft = 0;
     stk->canaryright = 0;
@@ -336,4 +282,9 @@ char* GetPoison(char* x)
 long GetPoison(long x)
 {
     return 0xDED32DED;
+}
+
+NamesTable GetPoison(NamesTable x)
+{
+    return {};
 }

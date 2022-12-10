@@ -2,6 +2,7 @@
 #define STACK_H
 
 #include "Config.h"
+#include "common.h"
 
 #define DEBUG
 
@@ -11,7 +12,8 @@
 #define DBG if(true)
 #endif
 
-struct stack{
+struct stack
+{
     unsigned long long canaryleft;
     unsigned long long* dataguardl;
     elem_t* data;
@@ -29,7 +31,6 @@ enum ResizeMode{
 };
 
 enum StackErrors{
-    NOERR       = 0,
     STKPTRERR   = 1,
     DATAERR     = 2,
     SIZERR      = 4,
@@ -37,10 +38,6 @@ enum StackErrors{
     SIZENCAPERR = 16,
     CANERR      = 32,
     HASHERR     = 64
-};
-
-enum SysErrors{
-    MEMERR = -1
 };
 
 int StackCtor(struct stack* stk, size_t capacity);
@@ -86,5 +83,7 @@ char GetPoison(char x);
 long GetPoison(long x);
 
 char* GetPoison(char* x);
+
+NamesTable GetPoison(NamesTable x);
 
 #endif //STACK_H

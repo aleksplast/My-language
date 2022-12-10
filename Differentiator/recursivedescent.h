@@ -4,11 +4,23 @@
 #include "diftree.h"
 #include "common.h"
 
-Node** LexicAnalizer(char* str);
+const char* GetComArg(int argc, char* argv[]);
 
-int StringAnalizer(char** s, Node*** nodes);
+Node** LexicAnalizer(char* str, char*** namestable);
+
+int StringAnalizer(char** s, Node*** nodes, char*** namestable);
+
+char* CheckForNewName(char* cmd, char*** namestable);
+
+int DataPrint(Node* node);
+
+int NodePrint(FILE* data, Node* node);
+
+int ContentPrint(FILE* data, Node* node);
 
 Node* GetGrammar(Node** nodes);
+
+Node* GetCode(Node*** arr);
 
 Node* GetFunc(Node*** arr);
 
@@ -26,6 +38,10 @@ Node* GetAssign(Node*** arr);
 
 Node* GetRet(Node*** arr);
 
+Node* GetIn(Node*** arr);
+
+Node* GetOut(Node*** arr);
+
 Node* GetExpression(Node*** arr);
 
 Node* GetT(Node*** arr);
@@ -38,6 +54,6 @@ Node* GetVar(Node*** arr);
 
 Node* GetNumber(Node*** arr);
 
-Node* CreateNode(NodeType type, double val, OperType optype, char* varvalue, Tree* tree, Node* ancestor, Node* leftchild, Node* rightchild);
+Node* CreateNode(NodeType type, double val, OperType optype, char* varvalue, Tree* tree, Node* ancestor, Node* leftchild, Node* rightchild, int line);
 
 #endif //RECURSIVE_DECENT

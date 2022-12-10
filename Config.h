@@ -1,10 +1,20 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <stdio.h>
+struct Name
+{
+    char* name;
+    int index;
+};
+
+struct NamesTable
+{
+    Name* names;
+    int size;
+};
 
 const unsigned long long CANARY = 0xBADC0FFEE;
 const unsigned int Seed = 33;
-typedef int elem_t;
+typedef NamesTable elem_t;
 
 #endif //CONFIG_H

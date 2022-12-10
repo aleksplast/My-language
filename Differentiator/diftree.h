@@ -9,8 +9,6 @@
 #define DBG if(true)
 #endif
 
-typedef char* elem_t;
-
 enum NodeType
 {
     UNKNOWN_TYPE    = 0,
@@ -46,6 +44,8 @@ enum OperType
     OP_PARAM,
     OP_CALL,
     OP_END,
+    OP_IN,
+    OP_OUT,
 };
 
 struct Tree;
@@ -60,6 +60,8 @@ struct Node
     Node* ancestor;
     Node* leftchild;
     Node* rightchild;
+
+    int line;
 
     Tree* tree;
 };

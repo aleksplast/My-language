@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
-#include <TXLib.h>
+#include "TXLib.h"
 
 #include "processor.h"
 
