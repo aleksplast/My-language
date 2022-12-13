@@ -119,13 +119,15 @@ int CreateAncestor(Node* node, Node* ancestor, Tree* tree);
 
 Node* CreateNode(NodeType type, double val, OperType optype, char* varvalue, Tree* tree, Node* ancestor, Node* leftchild, Node* rightchild, int line);
 
+const char* GetComArg(int argc, char* argv[]);
+
 int DataPrint(Node* node);
 
 int NodePrint(FILE* data, Node* node);
 
 int ContentPrint(FILE* data, Node* node);
 
-Node* ReadFromStandart();
+Node* ReadFromStandart(const char* input);
 
 void SetColor(enum Colors color);
 

@@ -18,14 +18,22 @@ int main(int argc, char* argv[])
 
     char** namestable = (char**) calloc(datasrc.size, sizeof(char*));
 
+    printf("HERE %d\n", __LINE__);
+
     char* datastr = TranslitIntoEnglish(datasrc.ptr, datasrc.size);
+
+    printf("datastr = %s\n", datastr);
 
     Node** nodes = LexicAnalizer(datastr, &namestable);
 
+    printf("HERE %d\n", __LINE__);
+
     Node* node = GetGrammar(nodes);
 
+    printf("HERE %d\n", __LINE__);
+
     DataPrint(node);
-    node = ReadFromStandart();
+    node = ReadFromStandart("data.txt");
 
     TreeCtor(&tree, NUM_TYPE, 0, OP_UNKNOWN, NULL, log);
     tree.anchor = node;

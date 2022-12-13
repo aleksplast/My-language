@@ -4,6 +4,7 @@ DIRBACK := C:\Users\USER\Documents\GitHub\My-language\backend
 DIRMIDDLE := C:\Users\USER\Documents\GitHub\My-language\middleend
 DIRFUNC := C:\Users\USER\Documents\GitHub\My-language\functions
 SRC := main.cpp $(DIRFRONT)\frontend.cpp $(DIRFUNC)\text-sort.cpp $(DIRFUNC)\diftree.cpp $(DIRBACK)\backend.cpp $(DIRFUNC)\stack.cpp $(DIRMIDDLE)\middleend.cpp
+SRCTRANS := $(DIRFRONT)\maintranslator.cpp $(DIRFRONT)\translator.cpp $(DIRFUNC)\text-sort.cpp $(DIRFUNC)\diftree.cpp
 DIRB := C:\Users\USER\Documents\My-language
 DIRCPU := C:\Users\USER\Documents\GitHub\Processor
 DIRASM := C:\Users\USER\Documents\GitHub\Assembler
@@ -19,6 +20,9 @@ cpu: $(SRCCPU)
 	$(CC) $^ -o $(DIRB)\$@
 
 main: $(SRC)
+	$(CC) $^ -o $(DIRB)\$@
+
+translator: $(SRCTRANS)
 	$(CC) $^ -o $(DIRB)\$@
 
 rec: $(REC)

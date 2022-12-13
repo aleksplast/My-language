@@ -465,11 +465,21 @@ Node* CreateNode(NodeType type, double val, OperType optype, char* varvalue, Tre
     return newnode;
 }
 
-Node* ReadFromStandart()
+const char* GetComArg(int argc, char* argv[])
+{
+    const char* input = "input.txt";
+
+    if (argc > 1)
+        return argv[1];
+    else
+        return input;
+}
+
+Node* ReadFromStandart(const char* input)
 {
     Source src = {};
 
-    TextReader("data.txt", &src, "r");
+    TextReader(input, &src, "r");
     LinesSeparator(&src, '\n');
 
     char* anchor = src.Strings[1].ptr;

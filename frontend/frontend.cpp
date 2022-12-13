@@ -8,16 +8,6 @@ const int Cmdsize = 40;
 
 #define CreateOpType(OpType) CreateNode(OP_TYPE, 0, OpType, NULL, NULL, NULL, NULL, NULL, 0)
 
-const char* GetComArg(int argc, char* argv[])
-{
-    const char* input = "input.txt";
-
-    if (argc > 1)
-        return argv[1];
-    else
-        return input;
-}
-
 Node** LexicAnalizer(char* str, char*** namestable)
 {
     char** s = &str;
@@ -229,7 +219,7 @@ Node* GetStatement(Node*** arr)
     Node* oldstat = NULL;
 
 
-    while ((**arr)->optype == OP_WHILE || (**arr)->optype == OP_IF || (**arr)->optype == OP_RET || (**arr)->type != OP_TYPE || (**arr)->optype == OP_VAR)
+    while ((**arr)->optype == OP_WHILE || (**arr)->optype == OP_IF || (**arr)->optype == OP_RET || (**arr)->type != OP_TYPE || (**arr)->optype == OP_VAR || (**arr)->optype == OP_OPBRC)
     {
         statnode = CreateOpType(OP_STAT);
         if (returnnode == NULL)
@@ -321,7 +311,7 @@ Node* GetCall(Node*** arr)
     paramnode->leftchild = currnode;
 
 //    assert((**arr)->optype == OP_COMMA || (**arr)->optype == OP_CLBRC);
-    CheckForError(**arr, OP_COMMA, OP_CLBRC);
+    CheckForError(**arr, OP_CLBRC, OP_COMMA);
     (*arr)++;
 
     Node* returnnode = paramnode;

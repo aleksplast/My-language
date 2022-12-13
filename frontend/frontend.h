@@ -5,8 +5,6 @@
 #include "..\functions\common.h"
 #include "..\functions\TXLib.h"
 
-const char* GetComArg(int argc, char* argv[]);
-
 Node** LexicAnalizer(char* str, char*** namestable);
 
 int StringAnalizer(char** s, Node*** nodes, char*** namestable);
