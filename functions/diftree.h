@@ -9,6 +9,13 @@
 #define DBG if(true)
 #endif
 
+enum Colors
+{
+    WHITE = 1, ///<Inficating white color
+    GREEN = 2, ///<indicating green color
+    RED   = 3, ///<Indicating red color
+};
+
 enum NodeType
 {
     UNKNOWN_TYPE    = 0,
@@ -44,8 +51,12 @@ enum OperType
     OP_PARAM,
     OP_CALL,
     OP_END,
-    OP_IN,
-    OP_OUT,
+    OP_IS_EE,
+    OP_IS_GE,
+    OP_IS_BE,
+    OP_IS_GT,
+    OP_IS_BT,
+    OP_IS_NE,
 };
 
 struct Tree;
@@ -102,7 +113,23 @@ int TreeDetor(Tree* tree);
 
 OperType IsOper(char* str);
 
+OperType IsStdOper(char* str);
+
 int CreateAncestor(Node* node, Node* ancestor, Tree* tree);
+
+Node* CreateNode(NodeType type, double val, OperType optype, char* varvalue, Tree* tree, Node* ancestor, Node* leftchild, Node* rightchild, int line);
+
+int DataPrint(Node* node);
+
+int NodePrint(FILE* data, Node* node);
+
+int ContentPrint(FILE* data, Node* node);
+
+Node* ReadFromStandart();
+
+void SetColor(enum Colors color);
+
+int compare(const double a, const double b);
 
 enum TreeErrors
 {

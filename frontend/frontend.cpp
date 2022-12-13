@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <strings.h>
-#include "recursivedescent.h"
+#include "frontend.h"
 
 const int Cmdsize = 40;
 
@@ -16,24 +16,6 @@ const char* GetComArg(int argc, char* argv[])
         return argv[1];
     else
         return input;
-}
-
-Node* CreateNode(NodeType type, double val, OperType optype, char* varvalue, Tree* tree, Node* ancestor, Node* leftchild, Node* rightchild, int line)
-{
-    Node* newnode = (Node*) calloc(1, sizeof(Node));
-
-    newnode->optype = optype;
-    newnode->val = val;
-    newnode->type = type;
-    newnode->varvalue = varvalue;
-    newnode->tree = tree;
-    newnode->ancestor = ancestor;
-    newnode->line = line;
-
-    newnode->leftchild = leftchild;
-    newnode->rightchild = rightchild;
-
-    return newnode;
 }
 
 Node** LexicAnalizer(char* str, char*** namestable)
@@ -83,7 +65,11 @@ int StringAnalizer(char** s, Node*** nodes, char*** namestable)
             else
             {
                 if ((name = CheckForNewName(cmd, namestable)) == NULL)
+                {
+                    if ((*(*nodes - 1))->optype != OP_VAR && (*(*nodes - 1))->optype != OP_FUNC)
+                        PrintDeclarationError(line, cmd);
                     **nodes = CreateNode(VAR_TYPE, 0, OP_UNKNOWN, cmd, NULL, NULL, NULL, NULL, line);
+                }
                 else
                 {
                     **nodes = CreateNode(VAR_TYPE, 0, OP_UNKNOWN, name, NULL, NULL, NULL, NULL, line);
@@ -119,47 +105,6 @@ char* CheckForNewName(char* cmd, char*** namestable)
     return NULL;
 }
 
-int DataPrint(Node* node)
-{
-    FILE* data = fopen("data.txt", "w");
-
-    NodePrint(data, node);
-
-    fclose(data);
-
-    return NOERR;
-}
-
-int NodePrint(FILE* data, Node* node)
-{
-    fprintf(data, " { ");
-    ContentPrint(data, node);
-
-    if (node->leftchild)
-        NodePrint(data, node->leftchild);
-
-    if (node->rightchild)
-        NodePrint(data, node->rightchild);
-
-    fprintf(data, " } ");
-
-    return NOERR;
-}
-
-int ContentPrint(FILE* data, Node* node)
-{
-    if (node->type == NUM_TYPE)
-        fprintf(data, "%lg", node->val);
-
-    else if (node->type == VAR_TYPE)
-        fprintf(data, "%s", node->varvalue);
-
-    else if (node->type == OP_TYPE)
-        OpTypePrint(data, node->optype);
-
-    return NOERR;
-}
-
 Node* GetGrammar(Node** nodes)
 {
     Node* node = GetCode(&nodes);
@@ -170,7 +115,8 @@ Node* GetGrammar(Node** nodes)
 
 Node* GetCode(Node*** arr)
 {
-    assert((**arr)->optype == OP_FUNC || (**arr)->optype == OP_VAR);
+    CheckForError(**arr, OP_FUNC, OP_VAR);
+//    assert((**arr)->optype == OP_FUNC || (**arr)->optype == OP_VAR);
 
     Node* returnnode = CreateOpType(OP_STAT);
     Node* currnode = returnnode;
@@ -203,7 +149,8 @@ Node* GetCode(Node*** arr)
 
 Node* GetFunc(Node*** arr)
 {
-    assert((**arr)->optype == OP_FUNC);
+//    assert((**arr)->optype == OP_FUNC);
+    CheckForError(**arr, OP_FUNC, OP_UNKNOWN);
 
     Node* currnode = **arr;
     (*arr)++;
@@ -224,7 +171,8 @@ Node* GetFunc(Node*** arr)
 
 Node* GetParams(Node*** arr)
 {
-    assert((**arr)->optype == OP_OPBRC);
+//    assert((**arr)->optype == OP_OPBRC);
+    CheckForError(**arr, OP_OPBRC, OP_UNKNOWN);
     (*arr)++;
 
     Node* paramnode = NULL;
@@ -242,7 +190,8 @@ Node* GetParams(Node*** arr)
     Node* nodeL = **arr;
     (*arr)++;
 
-    assert((**arr)->optype == OP_COMMA || (**arr)->optype == OP_CLBRC);
+//    assert((**arr)->optype == OP_COMMA || (**arr)->optype == OP_CLBRC);
+    CheckForError(**arr, OP_COMMA, OP_CLBRC);
     (*arr)++;
 
     currnode->leftchild = nodeL;
@@ -258,7 +207,8 @@ Node* GetParams(Node*** arr)
         nodeL = **arr;
         (*arr)++;
 
-        assert((**arr)->optype == OP_COMMA || (**arr)->optype == OP_CLBRC);
+//        assert((**arr)->optype == OP_COMMA || (**arr)->optype == OP_CLBRC);
+        CheckForError(**arr, OP_COMMA, OP_CLBRC);
         (*arr)++;
 
         currnode->leftchild = nodeL;
@@ -279,7 +229,7 @@ Node* GetStatement(Node*** arr)
     Node* oldstat = NULL;
 
 
-    while ((**arr)->optype == OP_WHILE || (**arr)->optype == OP_IF || (**arr)->optype == OP_RET || (**arr)->type != OP_TYPE || (**arr)->optype == OP_VAR || (**arr)->optype == OP_IN || (**arr)->optype == OP_OUT)
+    while ((**arr)->optype == OP_WHILE || (**arr)->optype == OP_IF || (**arr)->optype == OP_RET || (**arr)->type != OP_TYPE || (**arr)->optype == OP_VAR)
     {
         statnode = CreateOpType(OP_STAT);
         if (returnnode == NULL)
@@ -295,10 +245,6 @@ Node* GetStatement(Node*** arr)
             nodeL = GetRet(arr);
         else if ((**arr)->optype == OP_VAR)
             nodeL = GetAssign(arr);
-        else if ((**arr)->optype == OP_IN)
-            nodeL = GetIn(arr);
-        else if ((**arr)->optype == OP_OUT)
-            nodeL = GetOut(arr);
         else
         {
             nodeL = GetExpression(arr);
@@ -339,7 +285,8 @@ Node* GetStatement(Node*** arr)
                     nodeL->rightchild = nodeRR;
                 }
             }
-            assert((**arr)->optype == OP_SEP);
+//            assert((**arr)->optype == OP_SEP);
+            CheckForError(**arr, OP_SEP, OP_UNKNOWN);
             (*arr)++;
         }
 
@@ -355,67 +302,26 @@ Node* GetStatement(Node*** arr)
     return returnnode;
 }
 
-Node* GetIn(Node*** arr)
-{
-    assert((**arr)->optype == OP_IN);
-
-    Node* returnnode = **arr;
-    (*arr)++;
-
-    assert((**arr)->optype == OP_OPBRC);
-    (*arr)++;
-
-    Node* nodeL = (**arr);
-    returnnode->leftchild = nodeL;
-    (*arr)++;
-
-    assert((**arr)->optype == OP_CLBRC);
-    (*arr)++;
-
-    assert((**arr)->optype == OP_SEP);
-    (*arr)++;
-
-    return returnnode;
-}
-
-Node* GetOut(Node*** arr)
-{
-    assert((**arr)->optype == OP_OUT);
-
-    Node* returnnode = **arr;
-    (*arr)++;
-
-    assert((**arr)->optype == OP_OPBRC);
-    (*arr)++;
-
-    Node* nodeL = (**arr);
-    returnnode->leftchild = nodeL;
-    (*arr)++;
-
-    assert((**arr)->optype == OP_CLBRC);
-    (*arr)++;
-
-    assert((**arr)->optype == OP_SEP);
-    (*arr)++;
-
-    return returnnode;
-}
-
 Node* GetCall(Node*** arr)
 {
-    assert((**arr)->optype == OP_OPBRC);
+//    assert((**arr)->optype == OP_OPBRC);
+    CheckForError(**arr, OP_OPBRC, OP_UNKNOWN);
     (*arr)++;
 
     Node* paramnode = NULL;
     if ((**arr)->type != VAR_TYPE && (**arr)->type != NUM_TYPE)
+    {
+        (*arr)++;
         return paramnode;
+    }
 
     paramnode = CreateOpType(OP_PARAM);
     Node* currnode = GetExpression(arr);
 
     paramnode->leftchild = currnode;
 
-    assert((**arr)->optype == OP_COMMA || (**arr)->optype == OP_CLBRC);
+//    assert((**arr)->optype == OP_COMMA || (**arr)->optype == OP_CLBRC);
+    CheckForError(**arr, OP_COMMA, OP_CLBRC);
     (*arr)++;
 
     Node* returnnode = paramnode;
@@ -426,7 +332,8 @@ Node* GetCall(Node*** arr)
         currnode = GetExpression(arr);
         newnode->leftchild = currnode;
 
-        assert((**arr)->optype == OP_COMMA || (**arr)->optype == OP_CLBRC);
+//        assert((**arr)->optype == OP_COMMA || (**arr)->optype == OP_CLBRC);
+        CheckForError(**arr, OP_COMMA, OP_CLBRC);
         (*arr)++;
 
         paramnode->rightchild = newnode;
@@ -438,22 +345,37 @@ Node* GetCall(Node*** arr)
 
 Node* GetWhile(Node*** arr)
 {
-    assert((**arr)->optype == OP_WHILE);
+//    assert((**arr)->optype == OP_WHILE);
+    CheckForError(**arr, OP_WHILE, OP_UNKNOWN);
 
+    Node* conditionnode = NULL;
     Node* returnnode = **arr;
     (*arr)++;
 
-    assert((**arr)->optype == OP_OPBRC);
+//    assert((**arr)->optype == OP_OPBRC);
+    CheckForError(**arr, OP_OPBRC, OP_UNKNOWN);
     (*arr)++;
 
     Node* nodeL = GetExpression(arr);
 
-    assert((**arr)->optype == OP_CLBRC);
+    if ((**arr)->optype >= 25)
+    {
+        conditionnode = **arr;
+        (*arr)++;
+        Node* nodeRR = GetExpression(arr);
+        conditionnode->leftchild = nodeL;
+        conditionnode->rightchild = nodeRR;
+    }
+    else
+        conditionnode = nodeL;
+
+//    assert((**arr)->optype == OP_CLBRC);
+    CheckForError(**arr, OP_CLBRC, OP_UNKNOWN);
     (*arr)++;
 
     Node* nodeR = GetStatement(arr);
 
-    returnnode->leftchild = nodeL;
+    returnnode->leftchild = conditionnode;
     returnnode->rightchild = nodeR;
 
     return returnnode;
@@ -461,17 +383,32 @@ Node* GetWhile(Node*** arr)
 
 Node* GetIf(Node*** arr)
 {
-    assert((**arr)->optype == OP_IF);
+//    assert((**arr)->optype == OP_IF);
+    CheckForError(**arr, OP_IF, OP_UNKNOWN);
 
     Node* returnnode = **arr;
+    Node* conditionnode = NULL;
     (*arr)++;
 
-    assert((**arr)->optype == OP_OPBRC);
+//    assert((**arr)->optype == OP_OPBRC);
+    CheckForError(**arr, OP_OPBRC, OP_UNKNOWN);
     (*arr)++;
 
     Node* nodeL = GetExpression(arr);
 
-    assert((**arr)->optype == OP_CLBRC);
+    if ((**arr)->optype >= 25)
+    {
+        conditionnode = **arr;
+        (*arr)++;
+        Node* nodeRR = GetExpression(arr);
+        conditionnode->leftchild = nodeL;
+        conditionnode->rightchild = nodeRR;
+    }
+    else
+        conditionnode = nodeL;
+
+//    assert((**arr)->optype == OP_CLBRC);
+    CheckForError(**arr, OP_CLBRC, OP_UNKNOWN);
     (*arr)++;
 
     Node* nodeR = GetStatement(arr);
@@ -482,14 +419,14 @@ Node* GetIf(Node*** arr)
 
         Node* nodeRR = GetStatement(arr);
 
-        returnnode->leftchild = nodeL;
+        returnnode->leftchild = conditionnode;
         returnnode->rightchild = nodeelse;
         nodeelse->leftchild = nodeR;
         nodeelse->rightchild = nodeRR;
     }
     else
     {
-        returnnode->leftchild = nodeL;
+        returnnode->leftchild = conditionnode;
         returnnode->rightchild = nodeR;
     }
 
@@ -498,19 +435,22 @@ Node* GetIf(Node*** arr)
 
 Node* GetAssign(Node*** arr)
 {
-    assert((**arr)->optype == OP_VAR);
+//    assert((**arr)->optype == OP_VAR);
+    CheckForError(**arr, OP_VAR, OP_UNKNOWN);
 
     Node* returnnode = **arr;
     (*arr)++;
 
     Node* nodeL = GetExpression(arr);
 
-    assert((**arr)->optype == OP_EQ);
+//    assert((**arr)->optype == OP_EQ);
+    CheckForError(**arr, OP_EQ, OP_UNKNOWN);
     (*arr)++;
 
     Node* nodeR = GetExpression(arr);
 
-    assert((**arr)->optype == OP_SEP);
+//    assert((**arr)->optype == OP_SEP);
+    CheckForError(**arr, OP_SEP, OP_UNKNOWN);
     (*arr)++;
 
     returnnode->leftchild = nodeL;
@@ -521,14 +461,16 @@ Node* GetAssign(Node*** arr)
 
 Node* GetRet(Node*** arr)
 {
-    assert((**arr)->optype == OP_RET);
+//    assert((**arr)->optype == OP_RET);
+    CheckForError(**arr, OP_RET, OP_UNKNOWN);
 
     Node* returnnode = **arr;
     (*arr)++;
 
     Node* nodeL = GetExpression(arr);
 
-    assert((**arr)->optype == OP_SEP);
+//    assert((**arr)->optype == OP_SEP);
+    CheckForError(**arr, OP_SEP, OP_UNKNOWN);
     (*arr)++;
 
     returnnode->leftchild = nodeL;
@@ -599,7 +541,8 @@ Node* GetP(Node*** arr)
     {
         (*arr)++;
         node = GetExpression(arr);
-        assert((**arr)->optype == OP_CLBRC);
+//        assert((**arr)->optype == OP_CLBRC);
+        CheckForError(**arr, OP_CLBRC, OP_UNKNOWN);
         (*arr)++;
     }
     else if (node->type == VAR_TYPE)
@@ -628,33 +571,52 @@ Node* GetNumber(Node*** arr)
     return node;
 }
 
-int CheckForError(Node* node, OperType optype)
+int CheckForError(Node* node, OperType optype1, OperType optype2)
 {
-    if (node->optype != optype)
+    if (node->optype != optype1 && node->optype != optype2)
     {
-        ErrorPrint(node);
-        exit(1);
+        ErrorPrint(node, optype1);
+        exit(0);
     }
 
     return true;
 }
 
-int ErrorPrint(Node* node)
+int ErrorPrint(Node* node, OperType optype)
 {
-    if (node->optype == OP_SEP)
+    SetColor(RED);
+    printf("Error: ");
+    SetColor(WHITE);
+    if (optype == OP_SEP)
         printf("Missing separation token on line %d\n", node->line);
-    else if (node->optype == OP_OPBRC)
+    else if (optype == OP_OPBRC)
         printf("Missing opening bracket on line %d\n", node->line);
-    else if (node->optype == OP_CLBRC)
+    else if (optype == OP_CLBRC)
         printf("Missing closing bracket on line %d\n", node->line);
-    else if (node->optype == OP_EQ)
+    else if (optype == OP_EQ)
         printf("Missing equality token on line %d\n", node->line);
-    else if (node->optype == OP_VAR)
+    else if (optype == OP_VAR)
         printf("Missing variable token on line %d\n", node->line);
-    else if (node->optype == OP_FUNC)
+    else if (optype == OP_FUNC)
         printf("Missing function token on line %d\n", node->line);
-    else if (node->optype == OP_COMMA)
+    else if (optype == OP_COMMA)
         printf("Missing comma on line %d\n", node->line);
+    else if (optype == OP_IF)
+        printf("Missing if token on line %d\n", node->line);
+    else if (optype == OP_WHILE)
+        printf("Missing if token on line %d\n", node->line);
+    else if (optype == OP_RET)
+        printf("Missing return token on line %d\n", node->line);
 
     return NOERR;
+}
+
+void PrintDeclarationError(int line, char* cmd)
+{
+    SetColor(RED);
+    printf("Error: ");
+    SetColor(WHITE);
+    printf("No previous declaration of %s on line %d\n", cmd, line);
+
+    exit(0);
 }

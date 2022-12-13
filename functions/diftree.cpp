@@ -5,13 +5,22 @@
 
 #include "diftree.h"
 #include "common.h"
+#include "TXLib.h"
+#include "text-sort.h"
+
+typedef poem Source;
 
 const char* Poison = NULL;
+const double EPSILON = 1e-10;
 
 #define TREECHECK   if (int errors = TreeVerr(tree))                                         \
                         DBG TreeGraphDump(tree, errors, __LINE__, __func__, __FILE__);
 
 static int Piccounter = 1;
+
+#define CreateNum(val) CreateNode(NUM_TYPE, val, OP_UNKNOWN, NULL, NULL, currnode, NULL, NULL, 0)
+#define CreateOpType(optype)  CreateNode(OP_TYPE, 0, optype, NULL, NULL, currnode, NULL, NULL, 0)
+#define CreateVar(curr) CreateNode(VAR_TYPE, 0, OP_UNKNOWN, curr, NULL, currnode, NULL, NULL, 0)
 
 int TreeCtor(Tree* tree, NodeType type, double val, OperType optype, char* varvalue, char* graphfile)
 {
@@ -71,9 +80,11 @@ int TreeGraphDump (Tree* tree, int errors, int line, const char* func, const cha
 {
     DBG assert(tree != NULL);
 
-    char picture[100] = "picture";
+    if (errors > 0){;}
+
+    char picture[80] = "picture";
     sprintf(picture, "pictures\\%d.dot", Piccounter);
-    char picturesrc[100] = "picture";
+    char picturesrc[80] = "picture";
     sprintf(picturesrc, "pictures\\%d.png", Piccounter);
 
     FILE* pic = fopen(picture, "w");
@@ -89,7 +100,7 @@ int TreeGraphDump (Tree* tree, int errors, int line, const char* func, const cha
     fclose(pic);
     Piccounter += 1;
 
-    char src[100] = "";
+    char src[200] = "";
     sprintf(src, "dot -Tpng %s -o %s", picture, picturesrc);
 
     system(src);
@@ -126,12 +137,12 @@ int NodeDump(Node* node, int* counter, FILE* pic)
     {
         OpTypePrint(pic, node->optype);
     }
-    else if (node->val)
+    else if (compare(node->val, 0) != 0)
         fprintf(pic, "%lg", node->val);
     else if (node->varvalue)
         fprintf(pic, "%s", node->varvalue);
     else
-        fprintf(pic, "%.0lf", 0);
+        fprintf(pic, "%d", 0);
     fprintf(pic, "}\"]\n");
     int curr = *counter;
     if (node->leftchild)
@@ -314,58 +325,252 @@ int OpTypePrint(FILE* fp, OperType opertype)
         fprintf(fp, "%s", "EQ");
     else if (opertype == OP_CALL)
         fprintf(fp, "%s", "CALL");
+    else if (opertype == OP_IS_EE)
+        fprintf(fp, "%s", "IS_EE");
+    else if (opertype == OP_IS_GE)
+        fprintf(fp, "%s", "IS_GE");
+    else if (opertype == OP_IS_BE)
+        fprintf(fp, "%s", "IS_BE");
+    else if (opertype == OP_IS_GT)
+        fprintf(fp, "%s", "IS_GT");
+    else if (opertype == OP_IS_BT)
+        fprintf(fp, "%s", "IS_BT");
+    else if (opertype == OP_IS_NE)
+        fprintf(fp, "%s", "IS_NE");
 
     return NOERR;
 }
 
 OperType IsOper(char* str)
 {
-    if (strcmp(str, "raskrutit'") == 0)
+    if (stricmp(str, "raskrutit\'") == 0)
         return OP_MUL;
-    else if (strcmp(str, "baff") == 0)
+    else if (stricmp(str, "baff") == 0)
         return OP_ADD;
-    else if (strcmp(str, "klif") == 0)
+    else if (stricmp(str, "klif") == 0)
         return OP_DIV;
-    else if (strcmp(str, "damag") == 0)
+    else if (stricmp(str, "damag") == 0)
         return OP_SUB;
-    else if (strcmp(str, "aptaverny") == 0)
+    else if (stricmp(str, "aptaverny") == 0)
         return OP_POWER;
-    else if (strcmp(str, "zdarova") == 0)
+    else if (stricmp(str, "zdarova") == 0)
         return OP_OPBLOCK;
-    else if (strcmp(str, "poka") == 0)
+    else if (stricmp(str, "poka") == 0)
         return OP_CLBLOCK;
-    else if (strcmp(str, "podrubai") == 0)
+    else if (stricmp(str, "podrubai") == 0)
         return OP_OPBRC;
-    else if (strcmp(str, "ofai") == 0)
+    else if (stricmp(str, "ofai") == 0)
         return OP_CLBRC;
-    else if (strcmp(str, "vlad") == 0)
+    else if (stricmp(str, "vlad") == 0)
         return OP_OR;
-    else if (strcmp(str, "stas") == 0)
+    else if (stricmp(str, "stas") == 0)
         return OP_AND;
-    else if (strcmp(str, "vin") == 0)
+    else if (stricmp(str, "vin") == 0)
         return OP_IF;
-    else if (strcmp(str, "luz") == 0)
+    else if (stricmp(str, "luz") == 0)
         return OP_ELSE;
-    else if (strcmp(str, "katka") == 0)
+    else if (stricmp(str, "katka") == 0)
         return OP_FUNC;
-    else if (strcmp(str, "chat") == 0)
+    else if (stricmp(str, "chat") == 0)
         return OP_SEP;
-    else if (strcmp(str, "vylet") == 0)
+    else if (stricmp(str, "vylet") == 0)
         return OP_RET;
-    else if (strcmp(str, "regat\'") == 0)
+    else if (stricmp(str, "regat\'") == 0)
         return OP_WHILE;
-    else if (strcmp(str, "karta") == 0)
+    else if (stricmp(str, "karta") == 0)
         return OP_VAR;
-    else if (strcmp(str, "staty") == 0)
+    else if (stricmp(str, "staty") == 0)
         return OP_EQ;
-    else if (strcmp(str, "iiiii") == 0)
+    else if (stricmp(str, "iiiii") == 0)
         return OP_COMMA;
-    else if (strcmp(str, "topdek") == 0)
-        return OP_IN;
-    else if (strcmp(str, "zhmurik") == 0)
-        return OP_OUT;
+    else if (stricmp(str, "top1") == 0)
+        return OP_IS_EE;
+    else if (stricmp(str, "top2") == 0)
+        return OP_IS_GE;
+    else if (stricmp(str, "top3") == 0)
+        return OP_IS_BE;
+    else if (stricmp(str, "top4") == 0)
+        return OP_IS_GT;
+    else if (stricmp(str, "top5") == 0)
+        return OP_IS_BT;
+    else if (stricmp(str, "top6") == 0)
+        return OP_IS_NE;
 
     return OP_UNKNOWN;
+}
+
+OperType IsStdOper(char* str)
+{
+    if (stricmp(str, "MUL") == 0)
+        return OP_MUL;
+    else if (stricmp(str, "ADD") == 0)
+        return OP_ADD;
+    else if (stricmp(str, "DIV") == 0)
+        return OP_DIV;
+    else if (stricmp(str, "SUB") == 0)
+        return OP_SUB;
+    else if (stricmp(str, "POW") == 0)
+        return OP_POWER;
+    else if (stricmp(str, "IF") == 0)
+        return OP_IF;
+    else if (stricmp(str, "ELSE") == 0)
+        return OP_ELSE;
+    else if (stricmp(str, "FUNC") == 0)
+        return OP_FUNC;
+    else if (stricmp(str, "RET") == 0)
+        return OP_RET;
+    else if (stricmp(str, "WHILE") == 0)
+        return OP_WHILE;
+    else if (stricmp(str, "VAR") == 0)
+        return OP_VAR;
+    else if (stricmp(str, "EQ") == 0)
+        return OP_EQ;
+    else if (stricmp(str, "IS_EE") == 0)
+        return OP_IS_EE;
+    else if (stricmp(str, "IS_GE") == 0)
+        return OP_IS_GE;
+    else if (stricmp(str, "IS_BE") == 0)
+        return OP_IS_BE;
+    else if (stricmp(str, "IS_GT") == 0)
+        return OP_IS_GT;
+    else if (stricmp(str, "IS_BT") == 0)
+        return OP_IS_BT;
+    else if (stricmp(str, "IS_NE") == 0)
+        return OP_IS_NE;
+    else if (stricmp(str, "CALL") == 0)
+        return OP_CALL;
+    else if (stricmp(str, "ST") == 0)
+        return OP_STAT;
+    else if (stricmp(str, "PARAM") == 0)
+        return OP_PARAM;
+
+    return OP_UNKNOWN;
+}
+
+Node* CreateNode(NodeType type, double val, OperType optype, char* varvalue, Tree* tree, Node* ancestor, Node* leftchild, Node* rightchild, int line)
+{
+    Node* newnode = (Node*) calloc(1, sizeof(Node));
+
+    newnode->optype = optype;
+    newnode->val = val;
+    newnode->type = type;
+    newnode->varvalue = varvalue;
+    newnode->tree = tree;
+    newnode->ancestor = ancestor;
+    newnode->line = line;
+
+    newnode->leftchild = leftchild;
+    newnode->rightchild = rightchild;
+
+    return newnode;
+}
+
+Node* ReadFromStandart()
+{
+    Source src = {};
+
+    TextReader("data.txt", &src, "r");
+    LinesSeparator(&src, '\n');
+
+    char* anchor = src.Strings[1].ptr;
+    double val = 0;
+
+    while (isspace(*anchor))
+        anchor += 1;
+
+    Node* currnode = CreateNode(OP_TYPE, 0, OP_STAT, NULL, NULL, NULL, NULL, NULL, 0);
+    Node* returnnode = currnode;
+
+    for (int counter = 2; counter < src.nlines; counter++)
+    {
+        char* curr = src.Strings[counter].ptr;
+
+        while(isspace(*curr))
+            curr += 1;
+
+        if (*curr == '}')
+        {
+            currnode = currnode->ancestor;
+            continue;
+        }
+        else if (*curr == '{')
+        {
+            continue;
+        }
+        else
+        {
+            if (currnode->leftchild)
+            {
+                if (OperType optype = IsStdOper(curr))
+                    currnode->rightchild = CreateOpType(optype);
+                else if (sscanf(curr, "%lg", &val) == 1)
+                    currnode->rightchild = CreateNum(val);
+                else
+                    currnode->rightchild = CreateVar(curr);
+                currnode = currnode->rightchild;
+                continue;
+            }
+            else
+            {
+                if (OperType optype = IsStdOper(curr))
+                {
+                    currnode->leftchild = CreateOpType(optype);
+                }
+                else if (sscanf(curr, "%lg", &val) == 1)
+                    currnode->leftchild = CreateNum(val);
+                else
+                    currnode->leftchild = CreateVar(curr);
+                currnode = currnode->leftchild;
+                continue;
+            }
+        }
+    }
+
+    return returnnode;
+}
+
+int DataPrint(Node* node)
+{
+    FILE* data = fopen("data.txt", "w");
+
+    NodePrint(data, node);
+
+    fclose(data);
+
+    return NOERR;
+}
+
+int NodePrint(FILE* data, Node* node)
+{
+    fprintf(data, "{\n");
+    ContentPrint(data, node);
+
+    if (node->leftchild)
+        NodePrint(data, node->leftchild);
+
+    if (node->rightchild)
+        NodePrint(data, node->rightchild);
+
+    fprintf(data, "}\n");
+
+    return NOERR;
+}
+
+int ContentPrint(FILE* data, Node* node)
+{
+    if (node->type == NUM_TYPE)
+        fprintf(data, "%lg\n", node->val);
+
+    else if (node->type == VAR_TYPE)
+        fprintf(data, "%s\n", node->varvalue);
+
+    else if (node->type == OP_TYPE)
+    {
+        OpTypePrint(data, node->optype);
+        fprintf(data, "\n");
+    }
+
+    return NOERR;
 }
 
 int CreateAncestor(Node* node, Node* ancestor, Tree* tree)
@@ -382,6 +587,28 @@ int CreateAncestor(Node* node, Node* ancestor, Tree* tree)
         CreateAncestor(node->rightchild, node, tree);
 
     node->ancestor = ancestor;
+
+    return NOERR;
+}
+
+void SetColor(enum Colors color)
+{
+    if (color == WHITE)
+        txSetConsoleAttr(FOREGROUND_WHITE);
+    else if (color == GREEN)
+        txSetConsoleAttr(FOREGROUND_GREEN);
+    else if (color == RED)
+        txSetConsoleAttr(FOREGROUND_RED);
+}
+
+int compare(const double a, const double b)
+{
+    if (fabs(a-b) < EPSILON)
+        return 0;
+    if ((a-b) > EPSILON)
+        return 1;
+    if ((a-b) < EPSILON)
+        return -1;
 
     return NOERR;
 }

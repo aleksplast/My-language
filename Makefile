@@ -1,6 +1,9 @@
 CC := g++ -Wno-pointer-arith -Wwrite-strings
-SRC := main.cpp mylang.cpp Onegin-sort\text-sort.cpp Differentiator\diftree.cpp Differentiator\recursivedescent.cpp stack.cpp
-DIR := C:\Users\USER\Documents\My-language
+DIRFRONT := C:\Users\USER\Documents\GitHub\My-language\frontend
+DIRBACK := C:\Users\USER\Documents\GitHub\My-language\backend
+DIRMIDDLE := C:\Users\USER\Documents\GitHub\My-language\middleend
+DIRFUNC := C:\Users\USER\Documents\GitHub\My-language\functions
+SRC := main.cpp $(DIRFRONT)\frontend.cpp $(DIRFUNC)\text-sort.cpp $(DIRFUNC)\diftree.cpp $(DIRBACK)\backend.cpp $(DIRFUNC)\stack.cpp $(DIRMIDDLE)\middleend.cpp
 DIRB := C:\Users\USER\Documents\My-language
 DIRCPU := C:\Users\USER\Documents\GitHub\Processor
 DIRASM := C:\Users\USER\Documents\GitHub\Assembler
@@ -16,7 +19,7 @@ cpu: $(SRCCPU)
 	$(CC) $^ -o $(DIRB)\$@
 
 main: $(SRC)
-	$(CC) $^ -o $(DIR)\$@
+	$(CC) $^ -o $(DIRB)\$@
 
 rec: $(REC)
 	$(CC) $^ -o $(DIR)\$@

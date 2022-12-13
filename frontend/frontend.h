@@ -1,8 +1,9 @@
-#ifndef RECURSIVE_DECENT_H
-#define RECURSIVE_DECENT_H
+#ifndef FRONTEND_H
+#define FRONTEND_H
 
-#include "diftree.h"
-#include "common.h"
+#include "..\functions\diftree.h"
+#include "..\functions\common.h"
+#include "..\functions\TXLib.h"
 
 const char* GetComArg(int argc, char* argv[]);
 
@@ -12,11 +13,11 @@ int StringAnalizer(char** s, Node*** nodes, char*** namestable);
 
 char* CheckForNewName(char* cmd, char*** namestable);
 
-int DataPrint(Node* node);
+int CheckForError(Node* node, OperType optype1, OperType optype2);
 
-int NodePrint(FILE* data, Node* node);
+int ErrorPrint(Node* node, OperType optype);
 
-int ContentPrint(FILE* data, Node* node);
+void PrintDeclarationError(int line, char* cmd);
 
 Node* GetGrammar(Node** nodes);
 
@@ -54,6 +55,4 @@ Node* GetVar(Node*** arr);
 
 Node* GetNumber(Node*** arr);
 
-Node* CreateNode(NodeType type, double val, OperType optype, char* varvalue, Tree* tree, Node* ancestor, Node* leftchild, Node* rightchild, int line);
-
-#endif //RECURSIVE_DECENT
+#endif //FRONTEND_H

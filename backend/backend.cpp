@@ -5,64 +5,61 @@
 #include <strings.h>
 #include <ctype.h>
 
-#include "mylang.h"
-#include "TXLib.h"
+#include "..\backend\backend.h"
+#include "..\functions\TXLib.h"
 
-const int STRSIZE = 50;
 const int NAMETABLESIZE = 30;
+const OperType FirstIf = OP_IS_EE;
 
-int LanguageMain(const char* input)
-{
-    setlocale(LC_ALL,"Rus");
-    Source datasrc = InputHandler(input);
-
-    FILE* asmprog = fopen("asmprog.txt", "w");
-
-    Tree tree = {};
-    char log[STRSIZE] = "pictures\\graphlog.htm";
-
-    char** namestable = (char**) calloc(datasrc.size, sizeof(char*));
-
-    char* datastr = TranslitIntoEnglish(datasrc.ptr, datasrc.size);
-
-    Node** nodes = LexicAnalizer(datastr, &namestable);
-
-    Node* node = GetGrammar(nodes);
-
-    DataPrint(node);
-
-    TreeCtor(&tree, NUM_TYPE, 0, OP_UNKNOWN, NULL, log);
-    tree.anchor = node;
-    TreeGraphDump(&tree, 0, __LINE__, __func__, __FILE__);
-
-    CreateAncestor(tree.anchor, NULL, &tree);
-
-    CreateAsmProgramm(tree.anchor, asmprog);
-
-    system("asm.exe asmprog.txt");
-    system("cpu.exe");
-
-    return NOERR;
-}
+#define AsmCode(node) NodeIntoAsmCode(node, labelcounter, nametablestk, out);
+#define PrepNewTable(node)      NamesTable table = CreateNameTable();   \
+                                StackPush(nametablestk, table);         \
+                                FillNamesTable(node, nametablestk);
+#define AsmProgFunc(name) AsmCode##name(node, labelcounter, nametablestk, out)
+#define PopFTable PopFromNamesTable(out, nametablestk, node->varvalue)
+#define PushFTable PushFromNamesTable(out, nametablestk, node->varvalue)
 
 int CreateAsmProgramm(Node* node, FILE* out)
 {
     int labelcounter = 1;
     stack nametablestk = {};
+    fprintf(out,    "push 2\n"
+                    "pop rax\n");
 
     StackCtor(&nametablestk, 10);
 
-    NamesTable table = CreateNameTable();
-    StackPush(&nametablestk, table);
-    FillNamesTable(node, &nametablestk);
-    EnlargeRax(out, &nametablestk);
+    PrepareProg(node, out, &nametablestk);
+    NodeIntoAsmCode(node, &labelcounter, &nametablestk, out);
+    AddCoreFunctions(out);
+
+    fclose(out);
+
+    return NOERR;
+}
+
+int PrepareProg(Node* node, FILE* out, stack* nametablestk)
+{
+    PrepNewTable(node)
+    EnlargeRax(out, nametablestk);
 
     fprintf(out, "call :main\n");
     fprintf(out, "hlt\n");
 
-    NodeIntoAsmCode(node, &labelcounter, &nametablestk, out);
+    return NOERR;
+}
 
-    fclose(out);
+int AddCoreFunctions(FILE* out)
+{
+    fprintf(out,    "\nzhmurik:\n"
+                    "out\n"
+                    "ret\n");
+    fprintf(out,    "\ntopdek:\n"
+                    "in\n"
+                    "ret\n");
+
+    fprintf(out,    "\nsrezat\':\n"
+                    "sqrt\n"
+                    "ret\n");
 
     return NOERR;
 }
@@ -70,49 +67,43 @@ int CreateAsmProgramm(Node* node, FILE* out)
 int NodeIntoAsmCode(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 {
     if (node->optype == OP_STAT)
-        AsmCodeStatement(node, labelcounter, nametablestk, out);
+        AsmProgFunc(Statement);
 
     else if (node->optype == OP_FUNC)
-        AsmCodeFunc(node, labelcounter, nametablestk, out);
+        AsmProgFunc(Func);
 
     else if (node->optype == OP_WHILE)
-        AsmCodeWhile(node, labelcounter, nametablestk, out);
+        AsmProgFunc(While);
 
     else if (node->type == NUM_TYPE)
         AsmCodeNum(node, out);
 
     else if (node->optype == OP_IF)
-        AsmCodeIf(node, labelcounter, nametablestk, out);
+        AsmProgFunc(If);
 
     else if (node->optype <= 4 && node->optype > 0)
-        AsmCodeArithOper(node, labelcounter, nametablestk, out);
+        AsmProgFunc(ArithOper);
 
     else if (node->optype == OP_VAR)
-        AsmCodeVar(node, labelcounter, nametablestk, out);
+        AsmProgFunc(Var);
 
     else if (node->optype == OP_EQ)
-        AsmCodeEq(node, labelcounter, nametablestk, out);
+        AsmProgFunc(Eq);
 
     else if (node->optype == OP_PARAM)
-        AsmCodeParam(node, labelcounter, nametablestk, out);
+        AsmProgFunc(Param);
 
     else if (node->optype == OP_RET)
-        AsmCodeRet(node, labelcounter, nametablestk, out);
+        AsmProgFunc(Ret);
 
     else if (node->type == VAR_TYPE)
         AsmCodeVariable(node, nametablestk, out);
 
     else if (node->optype == OP_CALL)
-        AsmCodeCall(node, labelcounter, nametablestk, out);
+        AsmProgFunc(Call);
 
     else if (node->optype == OP_ELSE)
-        AsmCodeElse(node, labelcounter, nametablestk, out);
-
-    else if (node->optype == OP_OUT)
-        AsmCodeOut(node, labelcounter, nametablestk, out);
-
-    else if (node->optype == OP_IN)
-        AsmCodeIn(node, labelcounter, nametablestk, out);
+        AsmProgFunc(Else);
 
     return NOERR;
 }
@@ -120,22 +111,18 @@ int NodeIntoAsmCode(Node* node, int* labelcounter, stack* nametablestk, FILE* ou
 int AsmCodeStatement(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 {
     if (node->leftchild)
-        NodeIntoAsmCode(node->leftchild, labelcounter, nametablestk, out);
+        AsmCode(node->leftchild);
 
     if (node->rightchild)
-        NodeIntoAsmCode(node->rightchild, labelcounter, nametablestk, out);
+        AsmCode(node->rightchild);
 
     return NOERR;
 }
 
 int AsmCodeArithOper(Node* node, int* labelcounter,stack* nametablestk, FILE* out)
 {
-    if (node->leftchild)
-        NodeIntoAsmCode(node->leftchild, labelcounter, nametablestk, out);
-
-    if (node->rightchild)
-        NodeIntoAsmCode(node->rightchild, labelcounter, nametablestk, out);
-
+    AsmCode(node->leftchild);
+    AsmCode(node->rightchild);
     OpTypePrint(out, node->optype);
     fprintf(out, "\n");
 
@@ -146,24 +133,32 @@ int AsmCodeWhile(Node* node, int* labelcounter,stack* nametablestk, FILE* out)
 {
     int whilelabel = *labelcounter;
 
-    NamesTable table = CreateNameTable();
-    StackPush(nametablestk, table);
-    FillNamesTable(node->rightchild, nametablestk);
+    PrepNewTable(node->rightchild)
 
     EnlargeRax(out, nametablestk);
 
     fprintf(out, "%d:\n", whilelabel);
     (*labelcounter)++;
 
-    NodeIntoAsmCode(node->leftchild, labelcounter, nametablestk, out);
-
     int skiplabel = *labelcounter;
     (*labelcounter)++;
 
-    fprintf(out, "push 0\n");
-    fprintf(out, "je :%d\n", skiplabel);
+    if (node->leftchild->optype >= OP_IS_EE)
+    {
+        AsmCode(node->rightchild);
+        AsmCode(node->leftchild);
 
-    NodeIntoAsmCode(node->rightchild, labelcounter, nametablestk, out);
+        JumpPrint(out, node->leftchild->optype, skiplabel);
+    }
+    else
+    {
+        AsmCode(node->leftchild);
+
+        fprintf(out, "push 0\n");
+        fprintf(out, "je :%d\n", skiplabel);
+    }
+
+    AsmCode(node->rightchild);
 
     fprintf(out, "jmp :%d\n", whilelabel);
     fprintf(out, "%d:\n", skiplabel);
@@ -183,17 +178,18 @@ int AsmCodeNum(Node* node, FILE* out)
 
 int AsmCodeFunc(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 {
-    NamesTable table = CreateNameTable();
-    StackPush(nametablestk, table);
-    FillNamesTable(node, nametablestk);
+    if (node->rightchild == NULL)
+        return NOERR;
+
+    PrepNewTable(node)
 
     fprintf(out, "%s:\n", node->leftchild->varvalue);
     EnlargeRax(out, nametablestk);
 
     if (node->leftchild->leftchild)
-        NodeIntoAsmCode(node->leftchild->leftchild, labelcounter, nametablestk, out);
+        AsmCode(node->leftchild->leftchild);
 
-    NodeIntoAsmCode(node->rightchild, labelcounter, nametablestk, out);
+    AsmCode(node->rightchild);
 
     StackPop(nametablestk);
 
@@ -205,13 +201,23 @@ int AsmCodeIf(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
     NamesTable table = CreateNameTable();
     StackPush(nametablestk, table);
 
-    NodeIntoAsmCode(node->leftchild, labelcounter, nametablestk, out);
-
     int skiplabel = *labelcounter;
-    (*labelcounter)++;
+        (*labelcounter)++;
 
-    fprintf(out, "push 0\n");
-    fprintf(out, "je :%d\n", skiplabel);
+    if (node->leftchild->optype >= OP_IS_EE)
+    {
+        AsmCode(node->leftchild->rightchild);
+        AsmCode(node->leftchild->leftchild);
+
+        JumpPrint(out, node->leftchild->optype, skiplabel);
+    }
+    else
+    {
+        AsmCode(node->leftchild);
+
+        fprintf(out, "push 0\n");
+        fprintf(out, "je :%d\n", skiplabel);
+    }
 
 //    NodeIntoAsmCode(node->rightchild, labelcounter, nametablestk, out);
     if (node->rightchild->optype == OP_ELSE)
@@ -219,7 +225,7 @@ int AsmCodeIf(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
         FillNamesTable(node->rightchild->leftchild, nametablestk);
         EnlargeRax(out, nametablestk);
 
-        NodeIntoAsmCode(node->rightchild->leftchild, labelcounter, nametablestk, out);
+        AsmCode(node->rightchild->leftchild);
         ReduceRax(out, nametablestk);
         StackPop(nametablestk);
 
@@ -229,7 +235,7 @@ int AsmCodeIf(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
         fprintf(out, "jmp :%d\n", elselabel);
         fprintf(out, "%d:\n", skiplabel);
 
-        NodeIntoAsmCode(node->rightchild, labelcounter, nametablestk, out);
+        AsmCode(node->rightchild);
         fprintf(out, "%d:\n", elselabel);
     }
     else
@@ -237,7 +243,7 @@ int AsmCodeIf(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
         FillNamesTable(node->rightchild, nametablestk);
         EnlargeRax(out, nametablestk);
 
-        NodeIntoAsmCode(node->rightchild, labelcounter, nametablestk, out);
+        AsmCode(node->rightchild);
         ReduceRax(out, nametablestk);
         fprintf(out, "%d:\n", skiplabel);
 
@@ -249,13 +255,11 @@ int AsmCodeIf(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 
 int AsmCodeElse(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 {
-    NamesTable table = CreateNameTable();
-    StackPush(nametablestk, table);
-    FillNamesTable(node->rightchild, nametablestk);
+    PrepNewTable(node->rightchild);
     EnlargeRax(out, nametablestk);
 
     if (node->rightchild)
-        NodeIntoAsmCode(node->rightchild, labelcounter, nametablestk, out);
+        AsmCode(node->rightchild);
 
     ReduceRax(out, nametablestk);
     StackPop(nametablestk);
@@ -266,28 +270,38 @@ int AsmCodeElse(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 int AsmCodeVar(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 {
     if (node->rightchild)
-        NodeIntoAsmCode(node->rightchild, labelcounter, nametablestk, out);
+        AsmCode(node->rightchild);
 
-    NodeIntoAsmCode(node->leftchild, labelcounter, nametablestk, out);
+    AsmCode(node->leftchild);
 
     return NOERR;
 }
 
 int AsmCodeEq(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 {
-    NodeIntoAsmCode(node->rightchild, labelcounter, nametablestk, out);
+    AsmCode(node->rightchild);
 
-    NodeIntoAsmCode(node->leftchild, labelcounter, nametablestk, out);
+    AsmCode(node->leftchild);
 
     return NOERR;
 }
 
 int AsmCodeParam(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 {
-    NodeIntoAsmCode(node->leftchild, labelcounter, nametablestk, out);
+    if (node->leftchild->optype == OP_VAR)
+    {
+        if (node->rightchild)
+            AsmCode(node->rightchild);
 
-    if (node->rightchild)
-        NodeIntoAsmCode(node->rightchild, labelcounter, nametablestk, out);
+        AsmCode(node->leftchild);
+    }
+    else
+    {
+        AsmCode(node->leftchild);
+
+        if (node->rightchild)
+            AsmCode(node->rightchild);
+    }
 
     return NOERR;
 }
@@ -295,7 +309,7 @@ int AsmCodeParam(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 int AsmCodeRet(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 {
     if (node->leftchild)
-        NodeIntoAsmCode(node->leftchild, labelcounter, nametablestk, out);
+        AsmCode(node->leftchild);
 
     ReduceRax(out, nametablestk);
     fprintf(out, "ret\n");
@@ -309,27 +323,23 @@ int AsmCodeVariable(Node* node, stack* nametablestk, FILE* out)
     {
         if (node->ancestor->rightchild)
         {
-            PopFromNamesTable(out, nametablestk, node->varvalue);
+            PopFTable;
         }
         else if (node->ancestor->ancestor->optype == OP_PARAM)
         {
-            PopFromNamesTable(out, nametablestk, node->varvalue);
+            PopFTable;
         }
     }
     else if (node->ancestor->optype == OP_PARAM)
-        PushFromNamesTable(out, nametablestk, node->varvalue);
+        PushFTable;
     else if (node->ancestor->optype == OP_EQ && node->ancestor->leftchild == node)
-        PopFromNamesTable(out, nametablestk, node->varvalue);
-    else if (node->ancestor->optype == OP_OUT)
-        PushFromNamesTable(out, nametablestk, node->varvalue);
-    else if (node->ancestor->optype == OP_IN)
-        PopFromNamesTable(out, nametablestk, node->varvalue);
+        PopFTable;
     else if (node->ancestor->optype == OP_EQ && node->ancestor->rightchild == node)
-        PushFromNamesTable(out, nametablestk, node->varvalue);
+        PushFTable;
     else if (node->ancestor->optype == OP_FUNC){;}
     else if (node->ancestor->optype == OP_CALL){;}
     else
-        PushFromNamesTable(out, nametablestk, node->varvalue);
+        PushFTable;
 
     return NOERR;
 }
@@ -337,7 +347,7 @@ int AsmCodeVariable(Node* node, stack* nametablestk, FILE* out)
 int AsmCodeCall(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 {
     if (node->leftchild->leftchild)
-        NodeIntoAsmCode(node->leftchild->leftchild, labelcounter, nametablestk, out);
+        AsmCode(node->leftchild->leftchild);
 
     fprintf(out, "call :%s\n", node->leftchild->varvalue);
 
@@ -346,7 +356,7 @@ int AsmCodeCall(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 
 int AsmCodeOut(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 {
-    NodeIntoAsmCode(node->leftchild, labelcounter, nametablestk, out);
+    AsmCode(node->leftchild);
 
     fprintf(out, "out\n");
 
@@ -356,7 +366,7 @@ int AsmCodeOut(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 int AsmCodeIn(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 {
     fprintf(out, "in\n");
-    NodeIntoAsmCode(node->leftchild, labelcounter, nametablestk, out);
+    AsmCode(node->leftchild);
 
     return NOERR;
 }
@@ -454,6 +464,28 @@ int PopFromNamesTable(FILE* out, stack* nametablestk, char* name)
     return NOERR;
 }
 
+int PopBackwardsFromNamesTable(FILE* out, stack* nametablestk, char* name)
+{
+    int pos = 0;
+
+    for (int i = (int)nametablestk->size - 1; i >= 0; i--)
+    {
+        pos += nametablestk->data[i].size;
+
+        for (int j = (int)nametablestk->data[i].size - 1; j >= 0; j--)
+        {
+            if (stricmp(nametablestk->data[i].names[j].name, name) == 0)
+            {
+                pos = nametablestk->data[i].names[j].index - pos;
+                fprintf(out, "pop [%d+rax]\n", -1 * nametablestk->data[i].size - pos - 1);
+                return NOERR;
+            }
+        }
+    }
+
+    return NOERR;
+}
+
 int FillNamesTable(Node* node, stack* namestablestk)
 {
     if (node->leftchild)
@@ -469,9 +501,25 @@ int FillNamesTable(Node* node, stack* namestablestk)
     }
 
     if (node->optype == OP_VAR)
-    {
         AddToNamesTable(namestablestk, node->leftchild->varvalue);
-    }
+
+    return NOERR;
+}
+
+int JumpPrint(FILE* out, OperType optype, int label)
+{
+    if (optype == OP_IS_EE)
+        fprintf(out, "jne :%d\n", label);
+    else if (optype == OP_IS_GE)
+        fprintf(out, "jb :%d\n", label);
+    else if (optype == OP_IS_BE)
+        fprintf(out, "ja :%d\n", label);
+    else if (optype == OP_IS_GT)
+        fprintf(out, "jbe :%d\n", label);
+    else if (optype == OP_IS_BT)
+        fprintf(out, "jae :%d\n", label);
+    else if (optype == OP_IS_NE)
+        fprintf(out, "je :%d\n", label);
 
     return NOERR;
 }

@@ -1,12 +1,14 @@
-#ifndef MYLANG_H
-#define MYLANG_H
+#ifndef BACKEND_H
+#define BACKEND_H
 
-#include "config.h"
-#include "Onegin-sort\text-sort.h"
-#include "Differentiator\common.h"
-#include "Differentiator\diftree.h"
-#include "Differentiator\recursivedescent.h"
-#include "stack.h"
+#include "..\functions\Config.h"
+#include "..\functions\text-sort.h"
+#include "..\functions\common.h"
+#include "..\functions\diftree.h"
+//#include "..\frontend\frontend.h"
+#include "..\functions\stack.h"
+
+const int STRSIZE = 50;
 
 typedef poem Source;
 
@@ -17,6 +19,10 @@ char* TranslitIntoEnglish(char* str, long size);
 Source InputHandler(const char* input);
 
 int CreateAsmProgramm(Node* node, FILE* out);
+
+int PrepareProg(Node* node, FILE* out, stack* nametablestk);
+
+int AddCoreFunctions(FILE* out);
 
 int NodeIntoAsmCode(Node* node, int* labelcounter, stack* nametablestk, FILE* out);
 
@@ -56,7 +62,11 @@ int PushFromNamesTable(FILE* out, stack* nametablestk, char* name);
 
 int PopFromNamesTable(FILE* out, stack* nametablestk, char* name);
 
+int PopBackwardsFromNamesTable(FILE* out, stack* nametablestk, char* name);
+
 int FillNamesTable(Node* node, stack* namestablestk);
+
+int JumpPrint(FILE* out, OperType optype, int label);
 
 NamesTable CreateNameTable();
 
@@ -134,4 +144,4 @@ enum RussianSymb
     USELESS2 = -48,
 };
 
-#endif //MYLANG_H
+#endif //BACKEND_H
