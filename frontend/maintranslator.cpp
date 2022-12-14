@@ -13,5 +13,7 @@ int main(int argc, char* argv[])
 
     TranslateStandart(node, out);
 
+    fclose(out);
+
     return 0;
 }

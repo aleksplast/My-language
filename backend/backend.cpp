@@ -544,10 +544,6 @@ char* TranslitIntoEnglish(char* str, long size)
     {
         switch (*str)
         {
-            case USELESS2:
-                break;
-            case USELESS1:
-                break;
             case ARUS:
                 *newstr = 'a';
                 newstr++;

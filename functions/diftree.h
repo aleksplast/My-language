@@ -50,7 +50,11 @@ enum OperType
     OP_COMMA,
     OP_PARAM,
     OP_CALL,
+    OP_IN,
+    OP_OUT,
+    OP_SQRT,
     OP_END,
+    OP_NIL,
     OP_IS_EE,
     OP_IS_GE,
     OP_IS_BE,
@@ -116,6 +120,8 @@ OperType IsOper(char* str);
 OperType IsStdOper(char* str);
 
 int CreateAncestor(Node* node, Node* ancestor, Tree* tree);
+
+int ChangeCoreFunctionsFromStd(Node* node);
 
 Node* CreateNode(NodeType type, double val, OperType optype, char* varvalue, Tree* tree, Node* ancestor, Node* leftchild, Node* rightchild, int line);
 

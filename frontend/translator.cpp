@@ -7,15 +7,26 @@
 
 int TranslateStandart(Node* node, FILE* out)
 {
+    fprintf(out, "катка топдек подрубай офай чат\n");
+    fprintf(out, "катка жмурик подрубай карта гэррик офай чат\n");
+    fprintf(out, "катка срезать подрубай карта гэррик офай чат\n\n");
+
+    TranslateNodeFromStandart(node, out);
+
+    return NOERR;
+}
+
+int TranslateNodeFromStandart(Node* node, FILE* out)
+{
     PrintStart(node, out);
 
     if (node->leftchild)
-        TranslateStandart(node->leftchild, out);
+        TranslateNodeFromStandart(node->leftchild, out);
 
     PrintMiddle(node, out);
 
     if (node->rightchild)
-        TranslateStandart(node->rightchild, out);
+        TranslateNodeFromStandart(node->rightchild, out);
 
     PrintEnd(node, out);
 

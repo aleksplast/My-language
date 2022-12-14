@@ -18,19 +18,14 @@ int main(int argc, char* argv[])
 
     char** namestable = (char**) calloc(datasrc.size, sizeof(char*));
 
-    printf("HERE %d\n", __LINE__);
-
     char* datastr = TranslitIntoEnglish(datasrc.ptr, datasrc.size);
-
-    printf("datastr = %s\n", datastr);
 
     Node** nodes = LexicAnalizer(datastr, &namestable);
 
-    printf("HERE %d\n", __LINE__);
-
     Node* node = GetGrammar(nodes);
 
-    printf("HERE %d\n", __LINE__);
+    CreateAncestor(node, NULL, &tree);
+    ChangeCoreFunctions(node);
 
     DataPrint(node);
     node = ReadFromStandart("data.txt");

@@ -12,6 +12,10 @@ typedef poem Source;
 
 const char* Poison = NULL;
 const double EPSILON = 1e-10;
+const int Cmdsize = 50;
+char topd[40] = "topdek";
+char zhm[40] = "zhmurik";
+char srez[40] = "srezat'";
 
 #define TREECHECK   if (int errors = TreeVerr(tree))                                         \
                         DBG TreeGraphDump(tree, errors, __LINE__, __func__, __FILE__);
@@ -337,6 +341,14 @@ int OpTypePrint(FILE* fp, OperType opertype)
         fprintf(fp, "%s", "IS_BT");
     else if (opertype == OP_IS_NE)
         fprintf(fp, "%s", "IS_NE");
+    else if (opertype == OP_NIL)
+        fprintf(fp, "%s", "NIL");
+    else if (opertype == OP_IN)
+        fprintf(fp, "%s", "IN");
+    else if (opertype == OP_OUT)
+        fprintf(fp, "%s", "OUT");
+    else if (opertype == OP_SQRT)
+        fprintf(fp, "%s", "SQRT");
 
     return NOERR;
 }
@@ -443,6 +455,14 @@ OperType IsStdOper(char* str)
         return OP_STAT;
     else if (stricmp(str, "PARAM") == 0)
         return OP_PARAM;
+    else if (stricmp(str, "NIL") == 0)
+        return OP_NIL;
+    else if (stricmp(str, "IN") == 0)
+        return OP_IN;
+    else if (stricmp(str, "OUT") == 0)
+        return OP_OUT;
+    else if (stricmp(str, "SQRT") == 0)
+        return OP_SQRT;
 
     return OP_UNKNOWN;
 }
@@ -482,61 +502,122 @@ Node* ReadFromStandart(const char* input)
     TextReader(input, &src, "r");
     LinesSeparator(&src, '\n');
 
-    char* anchor = src.Strings[1].ptr;
     double val = 0;
-
-    while (isspace(*anchor))
-        anchor += 1;
+    int len = 0;
 
     Node* currnode = CreateNode(OP_TYPE, 0, OP_STAT, NULL, NULL, NULL, NULL, NULL, 0);
     Node* returnnode = currnode;
+    char* curr = src.ptr;
+    src.ptr[src.size - 1] = '\0';
 
-    for (int counter = 2; counter < src.nlines; counter++)
+    while(*curr != '\0')
     {
-        char* curr = src.Strings[counter].ptr;
-
-        while(isspace(*curr))
+        while(isspace(*curr) && *curr != '\0')
             curr += 1;
 
         if (*curr == '}')
         {
-            currnode = currnode->ancestor;
-            continue;
+            if (currnode->ancestor != NULL)
+                currnode = currnode->ancestor;
+            curr += 1;
         }
         else if (*curr == '{')
         {
-            continue;
+            curr += 1;
         }
         else
         {
             if (currnode->leftchild)
             {
-                if (OperType optype = IsStdOper(curr))
-                    currnode->rightchild = CreateOpType(optype);
-                else if (sscanf(curr, "%lg", &val) == 1)
+                char* cmd = (char*) calloc(Cmdsize, sizeof(char));
+                if (sscanf(curr, "%lg%n", &val, &len) == 1)
+                {
                     currnode->rightchild = CreateNum(val);
-                else
-                    currnode->rightchild = CreateVar(curr);
+                    free(cmd);
+                }
+                else if (sscanf(curr, "%s%n", cmd, &len) == 1)
+                {
+                    if (OperType optype = IsStdOper(cmd))
+                    {
+                        currnode->rightchild = CreateOpType(optype);
+                        free(cmd);
+                    }
+                    else
+                        currnode->rightchild = CreateVar(cmd);
+                }
+                curr += len;
                 currnode = currnode->rightchild;
-                continue;
             }
             else
             {
-                if (OperType optype = IsStdOper(curr))
+                char* cmd = (char*) calloc(Cmdsize, sizeof(char));
+                if (sscanf(curr, "%lg%n", &val, &len) == 1)
                 {
-                    currnode->leftchild = CreateOpType(optype);
-                }
-                else if (sscanf(curr, "%lg", &val) == 1)
                     currnode->leftchild = CreateNum(val);
-                else
-                    currnode->leftchild = CreateVar(curr);
+                    free(cmd);
+                }
+                else if (sscanf(curr, "%s%n", cmd, &len) == 1)
+                {
+                    if (OperType optype = IsStdOper(cmd))
+                    {
+                        currnode->leftchild = CreateOpType(optype);
+                        free(cmd);
+                    }
+                    else
+                        currnode->leftchild = CreateVar(cmd);
+                }
+                curr += len;
                 currnode = currnode->leftchild;
-                continue;
             }
         }
     }
+    returnnode = returnnode->leftchild;
+
+    ChangeCoreFunctionsFromStd(returnnode);
 
     return returnnode;
+}
+
+int ChangeCoreFunctionsFromStd(Node* node)
+{
+    if (node->leftchild)
+        ChangeCoreFunctionsFromStd(node->leftchild);
+    if (node->rightchild)
+        ChangeCoreFunctionsFromStd(node->rightchild);
+
+    if (node->optype != OP_IN && node->optype != OP_SQRT && node->optype != OP_OUT)
+        return NOERR;
+
+    Node* newnode = CreateNode(OP_TYPE, 0, OP_CALL, NULL, NULL, node->ancestor, NULL, NULL, 0);
+
+    if (node->optype == OP_IN)
+    {
+        newnode->leftchild = CreateNode(VAR_TYPE, 0, OP_UNKNOWN, topd, NULL, newnode, NULL, NULL, 0);
+        newnode->leftchild->leftchild = node->leftchild;
+    }
+    else if (node->optype == OP_OUT)
+    {
+        newnode->leftchild = CreateNode(VAR_TYPE, 0, OP_UNKNOWN, zhm, NULL, newnode, NULL, NULL, 0);;
+        newnode->leftchild->leftchild = node->leftchild;
+    }
+    else if (node->optype == OP_SQRT)
+    {
+        newnode->leftchild = CreateNode(VAR_TYPE, 0, OP_UNKNOWN, srez, NULL, newnode, NULL, NULL, 0);;
+        newnode->leftchild->leftchild = node->leftchild;
+    }
+
+    if (node->ancestor->leftchild == node)
+    {
+        node->ancestor->leftchild = newnode;
+        free(node);
+    }
+    else if (node->ancestor->rightchild == node)
+    {
+        node->ancestor->rightchild = newnode;
+        free(node);
+    }
+
+    return NOERR;
 }
 
 int DataPrint(Node* node)
@@ -552,16 +633,23 @@ int DataPrint(Node* node)
 
 int NodePrint(FILE* data, Node* node)
 {
-    fprintf(data, "{\n");
+    fprintf(data, "{ ");
     ContentPrint(data, node);
+
+    if (!node->leftchild && !node->rightchild)
+    {
+        fprintf(data, "} ");
+        return NOERR;
+    }
 
     if (node->leftchild)
         NodePrint(data, node->leftchild);
-
-    if (node->rightchild)
+    if (!node->rightchild)
+        fprintf(data, "{ NIL } ");
+    else if (node->rightchild)
         NodePrint(data, node->rightchild);
 
-    fprintf(data, "}\n");
+    fprintf(data, "} ");
 
     return NOERR;
 }
@@ -569,15 +657,15 @@ int NodePrint(FILE* data, Node* node)
 int ContentPrint(FILE* data, Node* node)
 {
     if (node->type == NUM_TYPE)
-        fprintf(data, "%lg\n", node->val);
+        fprintf(data, "%lg ", node->val);
 
     else if (node->type == VAR_TYPE)
-        fprintf(data, "%s\n", node->varvalue);
+        fprintf(data, "%s ", node->varvalue);
 
     else if (node->type == OP_TYPE)
     {
         OpTypePrint(data, node->optype);
-        fprintf(data, "\n");
+        fprintf(data, " ");
     }
 
     return NOERR;
@@ -597,6 +685,11 @@ int CreateAncestor(Node* node, Node* ancestor, Tree* tree)
         CreateAncestor(node->rightchild, node, tree);
 
     node->ancestor = ancestor;
+    if (node->optype == OP_NIL)
+    {
+        node->ancestor->rightchild = NULL;
+        free(node);
+    }
 
     return NOERR;
 }

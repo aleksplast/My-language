@@ -10,6 +10,8 @@
 
 int TranslateStandart(Node* node, FILE* out);
 
+int TranslateNodeFromStandart(Node* node, FILE* out);
+
 int PrintStart(Node* node, FILE* out);
 
 int PrintEnd(Node* node, FILE* out);

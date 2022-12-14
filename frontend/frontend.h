@@ -17,6 +17,10 @@ int ErrorPrint(Node* node, OperType optype);
 
 void PrintDeclarationError(int line, char* cmd);
 
+int ChangeCoreFunctions(Node* node);
+
+OperType IsCoreFunction(char* var);
+
 Node* GetGrammar(Node** nodes);
 
 Node* GetCode(Node*** arr);

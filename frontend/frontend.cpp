@@ -548,8 +548,61 @@ Node* GetVar(Node*** arr)
     Node* node = **arr;
 
     (*arr)++;
+    if ((**arr)->optype == OP_OPBRC)
+    {
+        Node* callnode = CreateOpType(OP_CALL);
+        callnode->leftchild = node;
+        node = callnode;
+
+        Node* params = GetCall(arr);
+
+        callnode->leftchild->leftchild = params;
+    }
 
     return node;
+}
+
+int ChangeCoreFunctions(Node* node)
+{
+    if (node->leftchild)
+        ChangeCoreFunctions(node->leftchild);
+    if (node->rightchild)
+        ChangeCoreFunctions(node->rightchild);
+
+    if (node->optype != OP_CALL)
+        return NOERR;
+
+    else if (OperType optype = IsCoreFunction(node->leftchild->varvalue))
+    {
+        Node* newnode = CreateOpType(optype);
+        newnode->leftchild = node->leftchild->leftchild;
+        if (node->ancestor->leftchild == node)
+        {
+            node->ancestor->leftchild = newnode;
+            free(node->leftchild);
+            free(node);
+        }
+        else if (node->ancestor->rightchild == node)
+        {
+            node->ancestor->rightchild = newnode;
+            free(node->leftchild);
+            free(node);
+        }
+    }
+
+    return NOERR;
+}
+
+OperType IsCoreFunction(char* var)
+{
+    if (stricmp(var, "zhmurik") == 0)
+        return OP_OUT;
+    else if (stricmp(var, "srezat'") == 0)
+        return OP_SQRT;
+    else if (stricmp(var, "topdek") == 0)
+        return OP_IN;
+
+    return OP_UNKNOWN;
 }
 
 Node* GetNumber(Node*** arr)
