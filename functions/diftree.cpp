@@ -289,66 +289,99 @@ int TypePrint(FILE* fp, NodeType type)
 
 int OpTypePrint(FILE* fp, OperType opertype)
 {
-    if (opertype == OP_UNKNOWN)
-        fprintf(fp, "%s", "UNKNOWN");
-    else if (opertype == OP_ADD)
-        fprintf(fp, "%s", "ADD");
-    else if (opertype == OP_MUL)
-        fprintf(fp, "%s", "MUL");
-    else if (opertype == OP_SUB)
-        fprintf(fp, "%s", "SUB");
-    else if (opertype == OP_DIV)
-        fprintf(fp, "%s", "DIV");
-    else if (opertype == OP_POWER)
-        fprintf(fp, "%s", "^");
-    else if (opertype == OP_OPBRC)
-        fprintf(fp, "%s", "OPBRC");
-    else if (opertype == OP_CLBRC)
-        fprintf(fp, "%s", "CLBRC");
-    else if (opertype == OP_OPBLOCK)
-        fprintf(fp, "%s", "OPBLOCK");
-    else if (opertype == OP_CLBLOCK)
-        fprintf(fp, "%s", "CLBLOCK");
-    else if (opertype == OP_PARAM)
-        fprintf(fp, "%s", "PARAM");
-    else if (opertype == OP_VAR)
-        fprintf(fp, "%s", "VAR");
-    else if (opertype == OP_FUNC)
-        fprintf(fp, "%s", "FUNC");
-    else if (opertype == OP_STAT)
-        fprintf(fp, "%s", "ST");
-    else if (opertype == OP_IF)
-        fprintf(fp, "%s", "IF");
-    else if (opertype == OP_ELSE)
-        fprintf(fp, "%s", "ELSE");
-    else if (opertype == OP_WHILE)
-        fprintf(fp, "%s", "WHILE");
-    else if (opertype == OP_RET)
-        fprintf(fp, "%s", "RET");
-    else if (opertype == OP_EQ)
-        fprintf(fp, "%s", "EQ");
-    else if (opertype == OP_CALL)
-        fprintf(fp, "%s", "CALL");
-    else if (opertype == OP_IS_EE)
-        fprintf(fp, "%s", "IS_EE");
-    else if (opertype == OP_IS_GE)
-        fprintf(fp, "%s", "IS_GE");
-    else if (opertype == OP_IS_BE)
-        fprintf(fp, "%s", "IS_BE");
-    else if (opertype == OP_IS_GT)
-        fprintf(fp, "%s", "IS_GT");
-    else if (opertype == OP_IS_BT)
-        fprintf(fp, "%s", "IS_BT");
-    else if (opertype == OP_IS_NE)
-        fprintf(fp, "%s", "IS_NE");
-    else if (opertype == OP_NIL)
-        fprintf(fp, "%s", "NIL");
-    else if (opertype == OP_IN)
-        fprintf(fp, "%s", "IN");
-    else if (opertype == OP_OUT)
-        fprintf(fp, "%s", "OUT");
-    else if (opertype == OP_SQRT)
-        fprintf(fp, "%s", "SQRT");
+    switch (opertype)
+    {
+        case OP_UNKNOWN:
+            fprintf(fp, "%s", "UNKNOWN");
+            break;
+        case OP_ADD:
+            fprintf(fp, "%s", "ADD");
+            break;
+        case OP_MUL:
+            fprintf(fp, "%s", "MUL");
+            break;
+        case OP_SUB:
+            fprintf(fp, "%s", "SUB");
+            break;
+        case OP_DIV:
+            fprintf(fp, "%s", "DIV");
+            break;
+        case OP_POWER:
+            fprintf(fp, "%s", "^");
+            break;
+        case OP_OPBRC:
+            fprintf(fp, "%s", "OPBRC");
+            break;
+        case OP_CLBRC:
+            fprintf(fp, "%s", "CLBRC");
+            break;
+        case OP_OPBLOCK:
+            fprintf(fp, "%s", "OPBLOCK");
+            break;
+        case OP_CLBLOCK:
+            fprintf(fp, "%s", "CLBLOCK");
+            break;
+        case OP_PARAM:
+            fprintf(fp, "%s", "PARAM");
+            break;
+        case OP_VAR:
+            fprintf(fp, "%s", "VAR");
+            break;
+        case OP_FUNC:
+            fprintf(fp, "%s", "FUNC");
+            break;
+        case OP_STAT:
+            fprintf(fp, "%s", "ST");
+            break;
+        case OP_IF:
+            fprintf(fp, "%s", "IF");
+            break;
+        case OP_ELSE:
+            fprintf(fp, "%s", "ELSE");
+            break;
+        case OP_WHILE:
+            fprintf(fp, "%s", "WHILE");
+            break;
+        case OP_RET:
+            fprintf(fp, "%s", "RET");
+            break;
+        case OP_EQ:
+            fprintf(fp, "%s", "EQ");
+            break;
+        case OP_CALL:
+            fprintf(fp, "%s", "CALL");
+            break;
+        case OP_IS_EE:
+            fprintf(fp, "%s", "IS_EE");
+            break;
+        case OP_IS_GE:
+            fprintf(fp, "%s", "IS_GE");
+            break;
+        case OP_IS_BE:
+            fprintf(fp, "%s", "IS_BE");
+            break;
+        case OP_IS_GT:
+            fprintf(fp, "%s", "IS_GT");
+            break;
+        case OP_IS_BT:
+            fprintf(fp, "%s", "IS_BT");
+            break;
+        case OP_IS_NE:
+            fprintf(fp, "%s", "IS_NE");
+            break;
+        case OP_NIL:
+            fprintf(fp, "%s", "NIL");
+            break;
+        case OP_IN:
+            fprintf(fp, "%s", "IN");
+            break;
+        case OP_OUT:
+            fprintf(fp, "%s", "OUT");
+            break;
+        case OP_SQRT:
+            fprintf(fp, "%s", "SQRT");
+            break;
+    }
 
     return NOERR;
 }

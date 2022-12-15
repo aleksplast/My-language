@@ -18,6 +18,7 @@ const OperType FirstIf = OP_IS_EE;
 #define AsmProgFunc(name) AsmCode##name(node, labelcounter, nametablestk, out)
 #define PopFTable PopFromNamesTable(out, nametablestk, node->varvalue)
 #define PushFTable PushFromNamesTable(out, nametablestk, node->varvalue)
+#define IS_OP(node, oper) (node->optype == oper)
 
 int CreateAsmProgramm(Node* node, FILE* out)
 {
@@ -309,7 +310,7 @@ int AsmCodeEq(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 
 int AsmCodeParam(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 {
-    if (node->leftchild->optype == OP_VAR)
+    if (IS_OP(node->leftchild, OP_VAR))
     {
         if (node->rightchild)
             AsmCode(node->rightchild);
@@ -340,27 +341,27 @@ int AsmCodeRet(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 
 int AsmCodeVariable(Node* node, stack* nametablestk, FILE* out)
 {
-    if (node->ancestor->optype == OP_VAR)
+    if (IS_OP(node->ancestor, OP_VAR))
     {
         if (node->ancestor->rightchild)
         {
             PopFTable;
         }
-        else if (node->ancestor->ancestor->optype == OP_PARAM)
+        else if (IS_OP(node->ancestor->ancestor, OP_PARAM))
         {
             PopFTable;
         }
     }
-    else if (node->ancestor->optype == OP_PARAM && stricmp(node->ancestor->ancestor->varvalue, "topdek") == 0)
+    else if (IS_OP(node->ancestor, OP_PARAM) && stricmp(node->ancestor->ancestor->varvalue, "topdek") == 0)
         {;}
-    else if (node->ancestor->optype == OP_PARAM)
+    else if (IS_OP(node->ancestor, OP_PARAM))
         PushFTable;
-    else if (node->ancestor->optype == OP_EQ && node->ancestor->leftchild == node)
+    else if (IS_OP(node->ancestor, OP_EQ) && node->ancestor->leftchild == node)
         PopFTable;
-    else if (node->ancestor->optype == OP_EQ && node->ancestor->rightchild == node)
+    else if (IS_OP(node->ancestor, OP_EQ) && node->ancestor->rightchild == node)
         PushFTable;
-    else if (node->ancestor->optype == OP_FUNC){;}
-    else if (node->ancestor->optype == OP_CALL){;}
+    else if (IS_OP(node->ancestor, OP_FUNC)){;}
+    else if (IS_OP(node->ancestor, OP_CALL)){;}
     else
         PushFTable;
 
@@ -516,13 +517,13 @@ int FillNamesTable(Node* node, stack* namestablestk)
 {
     if (node->leftchild)
     {
-        if (node->leftchild->optype != OP_IF && node->leftchild->optype != OP_ELSE && node->leftchild->optype != OP_FUNC && node->leftchild->optype != OP_WHILE)
+        if (!IS_OP(node->leftchild, OP_IF) && !IS_OP(node->leftchild, OP_ELSE) && !IS_OP(node->leftchild, OP_FUNC) && !IS_OP(node->leftchild, OP_WHILE))
             FillNamesTable(node->leftchild, namestablestk);
     }
 
     if (node->rightchild)
     {
-        if (node->rightchild->optype != OP_IF && node->rightchild->optype != OP_ELSE && node->rightchild->optype != OP_FUNC && node->rightchild->optype != OP_WHILE)
+        if (!IS_OP(node->rightchild, OP_IF) && !IS_OP(node->rightchild, OP_ELSE) && !IS_OP(node->rightchild, OP_FUNC) && !IS_OP(node->rightchild, OP_WHILE))
             FillNamesTable(node->rightchild, namestablestk);
     }
 

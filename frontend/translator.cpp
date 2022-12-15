@@ -8,8 +8,8 @@
 int TranslateStandart(Node* node, FILE* out)
 {
     fprintf(out, "катка топдек подрубай офай чат\n");
-    fprintf(out, "катка жмурик подрубай карта гэррик офай чат\n");
-    fprintf(out, "катка срезать подрубай карта гэррик офай чат\n\n");
+    fprintf(out, "катка жмурик подрубай карта гэррик офай вопросы\n");
+    fprintf(out, "катка срезать подрубай карта гэррик офай красиво\n\n");
 
     int indent = 0;
 
@@ -246,7 +246,7 @@ int PrintEnd(Node* node, int* indent, FILE* out)
             switch (node->optype)
             {
                 case OP_FUNC:
-                    fprintf(out, "ПОКА\n");
+                    fprintf(out, "ПОКА\n\n");
                     *indent -= 1;
                     break;
                 case OP_ADD:
