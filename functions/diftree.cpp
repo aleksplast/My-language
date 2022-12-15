@@ -385,6 +385,10 @@ OperType IsOper(char* str)
         return OP_FUNC;
     else if (stricmp(str, "chat") == 0)
         return OP_SEP;
+    else if (stricmp(str, "krasivo") == 0)
+        return OP_SEP;
+    else if (stricmp(str, "voprosy") == 0)
+        return OP_SEP;
     else if (stricmp(str, "vylet") == 0)
         return OP_RET;
     else if (stricmp(str, "regat\'") == 0)

@@ -24,13 +24,17 @@ int main(int argc, char* argv[])
 
     Node* node = GetGrammar(nodes);
 
+    TreeCtor(&tree, NUM_TYPE, 0, OP_UNKNOWN, NULL, log);
+    tree.anchor = node;
+
+
     CreateAncestor(node, NULL, &tree);
     ChangeCoreFunctions(node);
+    TreeGraphDump(&tree, 0, __LINE__, __func__, __FILE__);
 
     DataPrint(node);
     node = ReadFromStandart("data.txt");
 
-    TreeCtor(&tree, NUM_TYPE, 0, OP_UNKNOWN, NULL, log);
     tree.anchor = node;
     TreeGraphDump(&tree, 0, __LINE__, __func__, __FILE__);
 

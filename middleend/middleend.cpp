@@ -19,7 +19,6 @@ int SimplifyCode(Tree* tree)
     DBG assert(tree != NULL);
 
     CHANGE = true;
-    printf("HERE\n");
 
     while (CHANGE)
     {
@@ -187,8 +186,6 @@ int ChangeIntoChild(Node* node, Side side)
 int ChangeNodeIntoNum(Node* node, double val)
 {
     DBG assert(node != NULL);
-
-    printf("CHANGING INTO NUM\n");
 
     node->type = NUM_TYPE;
     node->val = val;

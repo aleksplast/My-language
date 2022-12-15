@@ -66,44 +66,65 @@ int AddCoreFunctions(FILE* out)
 
 int NodeIntoAsmCode(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
 {
-    if (node->optype == OP_STAT)
-        AsmProgFunc(Statement);
-
-    else if (node->optype == OP_FUNC)
-        AsmProgFunc(Func);
-
-    else if (node->optype == OP_WHILE)
-        AsmProgFunc(While);
-
-    else if (node->type == NUM_TYPE)
-        AsmCodeNum(node, out);
-
-    else if (node->optype == OP_IF)
-        AsmProgFunc(If);
-
-    else if (node->optype <= 4 && node->optype > 0)
-        AsmProgFunc(ArithOper);
-
-    else if (node->optype == OP_VAR)
-        AsmProgFunc(Var);
-
-    else if (node->optype == OP_EQ)
-        AsmProgFunc(Eq);
-
-    else if (node->optype == OP_PARAM)
-        AsmProgFunc(Param);
-
-    else if (node->optype == OP_RET)
-        AsmProgFunc(Ret);
-
-    else if (node->type == VAR_TYPE)
-        AsmCodeVariable(node, nametablestk, out);
-
-    else if (node->optype == OP_CALL)
-        AsmProgFunc(Call);
-
-    else if (node->optype == OP_ELSE)
-        AsmProgFunc(Else);
+    switch (node->type)
+    {
+        case NUM_TYPE:
+            AsmCodeNum(node, out);
+            break;
+        case VAR_TYPE:
+            AsmCodeVariable(node, nametablestk, out);
+            break;
+        case OP_TYPE:
+            switch (node->optype)
+            {
+                case OP_STAT:
+                    AsmProgFunc(Statement);
+                    break;
+                case OP_FUNC:
+                    AsmProgFunc(Func);
+                    break;
+                case OP_WHILE:
+                    AsmProgFunc(While);
+                    break;
+                case OP_IF:
+                    AsmProgFunc(If);
+                    break;
+                case OP_VAR:
+                    AsmProgFunc(Var);
+                    break;
+                case OP_EQ:
+                    AsmProgFunc(Eq);
+                    break;
+                case OP_PARAM:
+                    AsmProgFunc(Param);
+                    break;
+                case OP_RET:
+                    AsmProgFunc(Ret);
+                    break;
+                case OP_CALL:
+                    AsmProgFunc(Call);
+                    break;
+                case OP_ELSE:
+                    AsmProgFunc(Else);
+                    break;
+                case OP_ADD:
+                    AsmProgFunc(ArithOper);
+                    break;
+                case OP_SUB:
+                    AsmProgFunc(ArithOper);
+                    break;
+                case OP_MUL:
+                    AsmProgFunc(ArithOper);
+                    break;
+                case OP_DIV:
+                    AsmProgFunc(ArithOper);
+                    break;
+                default:
+                    break;
+            }
+        default:
+            break;
+    }
 
     return NOERR;
 }
@@ -330,6 +351,8 @@ int AsmCodeVariable(Node* node, stack* nametablestk, FILE* out)
             PopFTable;
         }
     }
+    else if (node->ancestor->optype == OP_PARAM && stricmp(node->ancestor->ancestor->varvalue, "topdek") == 0)
+        {;}
     else if (node->ancestor->optype == OP_PARAM)
         PushFTable;
     else if (node->ancestor->optype == OP_EQ && node->ancestor->leftchild == node)
@@ -350,6 +373,9 @@ int AsmCodeCall(Node* node, int* labelcounter, stack* nametablestk, FILE* out)
         AsmCode(node->leftchild->leftchild);
 
     fprintf(out, "call :%s\n", node->leftchild->varvalue);
+
+    if (stricmp(node->leftchild->varvalue, "topdek") == 0)
+        PopFromNamesTable(out, nametablestk, node->leftchild->leftchild->leftchild->varvalue);
 
     return NOERR;
 }
@@ -508,18 +534,29 @@ int FillNamesTable(Node* node, stack* namestablestk)
 
 int JumpPrint(FILE* out, OperType optype, int label)
 {
-    if (optype == OP_IS_EE)
-        fprintf(out, "jne :%d\n", label);
-    else if (optype == OP_IS_GE)
-        fprintf(out, "jb :%d\n", label);
-    else if (optype == OP_IS_BE)
-        fprintf(out, "ja :%d\n", label);
-    else if (optype == OP_IS_GT)
-        fprintf(out, "jbe :%d\n", label);
-    else if (optype == OP_IS_BT)
-        fprintf(out, "jae :%d\n", label);
-    else if (optype == OP_IS_NE)
-        fprintf(out, "je :%d\n", label);
+    switch (optype)
+    {
+        case OP_IS_EE:
+            fprintf(out, "jne :%d\n", label);
+            break;
+        case OP_IS_GE:
+            fprintf(out, "jb :%d\n", label);
+            break;
+        case OP_IS_BE:
+            fprintf(out, "ja :%d\n", label);
+            break;
+        case OP_IS_GT:
+            fprintf(out, "jbe :%d\n", label);
+            break;
+        case OP_IS_BT:
+            fprintf(out, "jae :%d\n", label);
+            break;
+        case OP_IS_NE:
+            fprintf(out, "je :%d\n", label);
+            break;
+        default:
+            break;
+    }
 
     return NOERR;
 }

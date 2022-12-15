@@ -11,29 +11,31 @@ int TranslateStandart(Node* node, FILE* out)
     fprintf(out, "катка жмурик подрубай карта гэррик офай чат\n");
     fprintf(out, "катка срезать подрубай карта гэррик офай чат\n\n");
 
-    TranslateNodeFromStandart(node, out);
+    int indent = 0;
+
+    TranslateNodeFromStandart(node, &indent, out);
 
     return NOERR;
 }
 
-int TranslateNodeFromStandart(Node* node, FILE* out)
+int TranslateNodeFromStandart(Node* node, int* indent, FILE* out)
 {
-    PrintStart(node, out);
+    PrintStart(node, indent, out);
 
     if (node->leftchild)
-        TranslateNodeFromStandart(node->leftchild, out);
+        TranslateNodeFromStandart(node->leftchild, indent, out);
 
-    PrintMiddle(node, out);
+    PrintMiddle(node, indent, out);
 
     if (node->rightchild)
-        TranslateNodeFromStandart(node->rightchild, out);
+        TranslateNodeFromStandart(node->rightchild, indent, out);
 
-    PrintEnd(node, out);
+    PrintEnd(node, indent, out);
 
     return NOERR;
 }
 
-int PrintStart(Node* node, FILE* out)
+int PrintStart(Node* node, int* indent, FILE* out)
 {
     switch (node->type)
     {
@@ -54,6 +56,7 @@ int PrintStart(Node* node, FILE* out)
             switch (node->optype)
             {
                 case OP_FUNC:
+                    IndentPrint(*indent, out);
                     fprintf(out, "катка ");
                     break;
                 case OP_ADD:
@@ -81,15 +84,22 @@ int PrintStart(Node* node, FILE* out)
                     break;
                 }
                 case OP_VAR:
+                {
+                    if (node->ancestor->optype != OP_PARAM)
+                        IndentPrint(*indent, out);
                     fprintf(out, "карта ");
                     break;
+                }
                 case OP_IF:
+                    IndentPrint(*indent, out);
                     fprintf(out, "вин подрубай ");
                     break;
                 case OP_WHILE:
+                    IndentPrint(*indent, out);
                     fprintf(out, "регать ");
                     break;
                 case OP_RET:
+                    IndentPrint(*indent, out);
                     fprintf(out, "вылет ");
                     break;
                 case OP_PARAM:
@@ -97,6 +107,14 @@ int PrintStart(Node* node, FILE* out)
                     if (node->ancestor->optype == OP_PARAM)
                         fprintf(out, "ИИИИИ ");
                     break;
+                }
+                case OP_EQ:
+                    IndentPrint(*indent, out);
+                    break;
+                case OP_CALL:
+                {
+                    if (node->ancestor->optype == OP_STAT)
+                        IndentPrint(*indent, out);
                 }
                 default:
                     break;
@@ -108,7 +126,7 @@ int PrintStart(Node* node, FILE* out)
     return NOERR;
 }
 
-int PrintMiddle(Node* node, FILE* out)
+int PrintMiddle(Node* node, int* indent, FILE* out)
 {
     switch (node->type)
     {
@@ -154,16 +172,32 @@ int PrintMiddle(Node* node, FILE* out)
                     fprintf(out, "клиф ");
                     break;
                 case OP_IF:
-                    fprintf(out, "офай\nЗДАРОВА\n\t");
+                    fprintf(out, "офай\n");
+                    IndentPrint(*indent, out);
+                    *indent += 1;
+                    fprintf(out, "ЗДАРОВА\n");
                     break;
                 case OP_FUNC:
-                    fprintf(out, "офай\nЗДАРОВА\n\t");
+                    fprintf(out, "офай\n");
+                    IndentPrint(*indent, out);
+                    *indent += 1;
+                    fprintf(out, "ЗДАРОВА\n");
                     break;
                 case OP_WHILE:
-                    fprintf(out, "офай\nЗДАРОВА\n\t");
+                    fprintf(out, "офай\n");
+                    IndentPrint(*indent, out);
+                    *indent += 1;
+                    fprintf(out, "ЗДАРОВА\n");
                     break;
                 case OP_ELSE:
-                    fprintf(out, "ПОКА\nлуз\n\tЗДАРОВА\n\t");
+                    *indent -= 1;
+                    IndentPrint(*indent, out);
+                    fprintf(out, "ПОКА\n");
+                    IndentPrint(*indent, out);
+                    fprintf(out, "луз\n");
+                    IndentPrint(*indent, out);
+                    *indent += 1;
+                    fprintf(out, "ЗДАРОВА\n");
                     break;
                 case OP_VAR:
                 {
@@ -181,8 +215,26 @@ int PrintMiddle(Node* node, FILE* out)
     return NOERR;
 }
 
-int PrintEnd(Node* node, FILE* out)
+int PrintEnd(Node* node, int* indent, FILE* out)
 {
+    int random = rand() % 3;
+    char sep[40] = "";
+
+    switch (random)
+    {
+        case 0:
+            sprintf(sep, "чат");
+            break;
+        case 1:
+            sprintf(sep, "красиво");
+            break;
+        case 2:
+            sprintf(sep, "вопросы");
+            break;
+        default:
+            sprintf(sep, "чат");
+            break;
+    }
     switch (node->type)
     {
         case NUM_TYPE:
@@ -195,6 +247,7 @@ int PrintEnd(Node* node, FILE* out)
             {
                 case OP_FUNC:
                     fprintf(out, "ПОКА\n");
+                    *indent -= 1;
                     break;
                 case OP_ADD:
                 {
@@ -221,34 +274,42 @@ int PrintEnd(Node* node, FILE* out)
                     break;
                 }
                 case OP_ELSE:
+                    *indent -= 1;
+                    IndentPrint(*indent, out);
                     fprintf(out, "ПОКА\n");
                     break;
                 case OP_WHILE:
+                    *indent -= 1;
+                    IndentPrint(*indent, out);
                     fprintf(out, "ПОКА\n");
                     break;
                 case OP_RET:
-                    fprintf(out, "чат\n");
+                    fprintf(out, "%s\n", sep);
                     break;
                 case OP_IF:
                 {
                     if (node->rightchild && node->rightchild->optype != OP_ELSE)
+                    {
+                        *indent -= 1;
+                        IndentPrint(*indent, out);
                         fprintf(out, "ПОКА\n");
+                    }
                     break;
                 }
                 case OP_VAR:
                 {
                     if (node->ancestor->optype != OP_PARAM)
-                        fprintf(out, "чат\n");
+                        fprintf(out, "%s\n", sep);
                     break;
                 }
                 case OP_EQ:
-                    fprintf(out, "чат\n");
+                    fprintf(out, "%s\n", sep);
                     break;
                 case OP_CALL:
                 {
                     fprintf(out, "офай ");
                     if (node->ancestor->optype == OP_STAT)
-                        fprintf(out, "чат\n");
+                        fprintf(out, "%s\n", sep);
                     break;
                 }
                 default:
@@ -269,6 +330,16 @@ int Priority(Node* node)
         return 2;
     else
         return -1;
+
+    return NOERR;
+}
+
+int IndentPrint(int indent, FILE* out)
+{
+    for (int counter = 0; counter < indent; counter++)
+    {
+        fprintf(out, "\t");
+    }
 
     return NOERR;
 }
