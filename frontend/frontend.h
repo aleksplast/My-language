@@ -5,6 +5,9 @@
 #include "..\functions\common.h"
 #include "..\functions\TXLib.h"
 
+#pragma GCC diagnostic ignored "-Wswitch-enum"
+#pragma GCC diagnostic ignored "-Wswitch"
+
 Node** LexicAnalizer(char* str, char*** namestable);
 
 int StringAnalizer(char** s, Node*** nodes, char*** namestable);

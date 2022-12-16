@@ -9,7 +9,8 @@ int TranslateStandart(Node* node, FILE* out)
 {
     fprintf(out, "катка топдек подрубай офай чат\n");
     fprintf(out, "катка жмурик подрубай карта гэррик офай вопросы\n");
-    fprintf(out, "катка срезать подрубай карта гэррик офай красиво\n\n");
+    fprintf(out, "катка срезать подрубай карта гэррик офай красиво\n");
+    fprintf(out, "катка синус подрубай карта гэрр офай вопросы\n\n");
 
     int indent = 0;
 
@@ -96,7 +97,7 @@ int PrintStart(Node* node, int* indent, FILE* out)
                     break;
                 case OP_WHILE:
                     IndentPrint(*indent, out);
-                    fprintf(out, "регать ");
+                    fprintf(out, "регать подрубай ");
                     break;
                 case OP_RET:
                     IndentPrint(*indent, out);

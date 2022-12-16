@@ -27,10 +27,10 @@ int main(int argc, char* argv[])
     TreeCtor(&tree, NUM_TYPE, 0, OP_UNKNOWN, NULL, log);
     tree.anchor = node;
 
-
     CreateAncestor(node, NULL, &tree);
     ChangeCoreFunctions(node);
     TreeGraphDump(&tree, 0, __LINE__, __func__, __FILE__);
+    SimplifyCode(&tree);
 
     DataPrint(node);
     node = ReadFromStandart("data.txt");
@@ -39,7 +39,6 @@ int main(int argc, char* argv[])
     TreeGraphDump(&tree, 0, __LINE__, __func__, __FILE__);
 
     CreateAncestor(tree.anchor, NULL, &tree);
-    SimplifyCode(&tree);
 
     CreateAsmProgramm(tree.anchor, asmprog);
 

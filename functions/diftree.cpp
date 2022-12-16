@@ -8,6 +8,9 @@
 #include "TXLib.h"
 #include "text-sort.h"
 
+#pragma GCC diagnostic ignored "-Wswitch"
+#pragma GCC diagnostic ignored "-Wswitch-enum"
+
 typedef poem Source;
 
 const char* Poison = NULL;
@@ -16,6 +19,7 @@ const int Cmdsize = 50;
 char topd[40] = "topdek";
 char zhm[40] = "zhmurik";
 char srez[40] = "srezat'";
+char sisus[40] = "sinus";
 
 #define TREECHECK   if (int errors = TreeVerr(tree))                                         \
                         DBG TreeGraphDump(tree, errors, __LINE__, __func__, __FILE__);
@@ -294,6 +298,9 @@ int OpTypePrint(FILE* fp, OperType opertype)
         case OP_UNKNOWN:
             fprintf(fp, "%s", "UNKNOWN");
             break;
+        case OP_SIN:
+            fprintf(fp, "%s", "SIN");
+            break;
         case OP_ADD:
             fprintf(fp, "%s", "ADD");
             break;
@@ -381,6 +388,8 @@ int OpTypePrint(FILE* fp, OperType opertype)
         case OP_SQRT:
             fprintf(fp, "%s", "SQRT");
             break;
+        default:
+            break;
     }
 
     return NOERR;
@@ -406,8 +415,6 @@ OperType IsOper(char* str)
         return OP_OPBRC;
     else if (stricmp(str, "ofai") == 0)
         return OP_CLBRC;
-    else if (stricmp(str, "vlad") == 0)
-        return OP_OR;
     else if (stricmp(str, "stas") == 0)
         return OP_AND;
     else if (stricmp(str, "vin") == 0)
@@ -500,6 +507,8 @@ OperType IsStdOper(char* str)
         return OP_OUT;
     else if (stricmp(str, "SQRT") == 0)
         return OP_SQRT;
+    else if (stricmp(str, "SIN") == 0)
+        return OP_SIN;
 
     return OP_UNKNOWN;
 }
@@ -622,7 +631,7 @@ int ChangeCoreFunctionsFromStd(Node* node)
     if (node->rightchild)
         ChangeCoreFunctionsFromStd(node->rightchild);
 
-    if (node->optype != OP_IN && node->optype != OP_SQRT && node->optype != OP_OUT)
+    if (node->optype != OP_IN && node->optype != OP_SQRT && node->optype != OP_OUT && node->optype != OP_SIN)
         return NOERR;
 
     Node* newnode = CreateNode(OP_TYPE, 0, OP_CALL, NULL, NULL, node->ancestor, NULL, NULL, 0);
@@ -634,12 +643,17 @@ int ChangeCoreFunctionsFromStd(Node* node)
     }
     else if (node->optype == OP_OUT)
     {
-        newnode->leftchild = CreateNode(VAR_TYPE, 0, OP_UNKNOWN, zhm, NULL, newnode, NULL, NULL, 0);;
+        newnode->leftchild = CreateNode(VAR_TYPE, 0, OP_UNKNOWN, zhm, NULL, newnode, NULL, NULL, 0);
         newnode->leftchild->leftchild = node->leftchild;
     }
     else if (node->optype == OP_SQRT)
     {
-        newnode->leftchild = CreateNode(VAR_TYPE, 0, OP_UNKNOWN, srez, NULL, newnode, NULL, NULL, 0);;
+        newnode->leftchild = CreateNode(VAR_TYPE, 0, OP_UNKNOWN, srez, NULL, newnode, NULL, NULL, 0);
+        newnode->leftchild->leftchild = node->leftchild;
+    }
+    else if (node->optype == OP_SIN)
+    {
+        newnode->leftchild = CreateNode(VAR_TYPE, 0, OP_UNKNOWN, sisus, NULL, newnode, NULL, NULL, 0);
         newnode->leftchild->leftchild = node->leftchild;
     }
 

@@ -35,7 +35,7 @@ enum OperType
     OP_CLBLOCK,
     OP_POWER,
     OP_AND,
-    OP_OR,
+    OP_SIN,
     OP_IF,
     OP_ELSE,
     OP_EQ,

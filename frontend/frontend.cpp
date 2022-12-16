@@ -352,6 +352,7 @@ Node* GetWhile(Node*** arr)
     {
         conditionnode = **arr;
         (*arr)++;
+
         Node* nodeRR = GetExpression(arr);
         conditionnode->leftchild = nodeL;
         conditionnode->rightchild = nodeRR;
@@ -457,6 +458,11 @@ Node* GetRet(Node*** arr)
     Node* returnnode = **arr;
     (*arr)++;
 
+    if ((**arr)->optype == OP_SEP)
+    {
+        (*arr)++;
+        return returnnode;
+    }
     Node* nodeL = GetExpression(arr);
 
 //    assert((**arr)->optype == OP_SEP);
@@ -601,6 +607,8 @@ OperType IsCoreFunction(char* var)
         return OP_SQRT;
     else if (stricmp(var, "topdek") == 0)
         return OP_IN;
+    else if (stricmp(var, "sinus") == 0)
+        return OP_SIN;
 
     return OP_UNKNOWN;
 }

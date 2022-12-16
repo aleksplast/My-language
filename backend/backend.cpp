@@ -8,8 +8,10 @@
 #include "..\backend\backend.h"
 #include "..\functions\TXLib.h"
 
+#pragma GCC diagnostic ignored "-Wswitch-enum"
+#pragma GCC diagnostic ignored "-Wswitch"
+
 const int NAMETABLESIZE = 30;
-const OperType FirstIf = OP_IS_EE;
 
 #define AsmCode(node) NodeIntoAsmCode(node, labelcounter, nametablestk, out);
 #define PrepNewTable(node)      NamesTable table = CreateNameTable();   \
@@ -60,6 +62,10 @@ int AddCoreFunctions(FILE* out)
 
     fprintf(out,    "\nsrezat\':\n"
                     "sqrt\n"
+                    "ret\n");
+
+    fprintf(out,    "\nsinus:\n"
+                    "sin\n"
                     "ret\n");
 
     return NOERR;
@@ -167,8 +173,8 @@ int AsmCodeWhile(Node* node, int* labelcounter,stack* nametablestk, FILE* out)
 
     if (node->leftchild->optype >= OP_IS_EE)
     {
-        AsmCode(node->rightchild);
-        AsmCode(node->leftchild);
+        AsmCode(node->leftchild->rightchild);
+        AsmCode(node->leftchild->leftchild);
 
         JumpPrint(out, node->leftchild->optype, skiplabel);
     }
