@@ -17,8 +17,8 @@ This language is made in style of famous russian streamer - Silvername a.k.a Vla
 
 ## Frontend
 
-In this step programm constructs tree from given text. It is constructed according to standart, that was developed by our group. You can find it [here](https://github.com/dodokek/LanguageStandart)
-It is made with the help of recursive decent and when work is done, tree looks like this
+In this step programm constructs tree from given text. It is constructed according to standart, that was developed by our group. You can find it [here](https://github.com/dodokek/LanguageStandart).
+Tree is made with the help of recursive decent and when work is done, tree looks like this
 
 <details>
 <summary> Tree example </summary>
